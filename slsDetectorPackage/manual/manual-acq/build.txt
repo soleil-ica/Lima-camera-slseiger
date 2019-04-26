@@ -1,0 +1,194 @@
+[INFO] 
+NOTE: Maven is executing in offline mode. Any artifacts not already in your local
+repository will be inaccessible.
+
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Building manual-acq
+[INFO]    task-segment: [clean, install]
+[INFO] ------------------------------------------------------------------------
+[INFO] [clean:clean]
+[INFO] Deleting directory /media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/target
+[INFO] [freehep-nar:nar-download]
+[INFO] Using AOL: amd64-Linux-g++
+[INFO] [freehep-nar:nar-system-generate]
+[INFO] [freehep-nar:nar-unpack]
+[INFO] [resources:resources]
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] skip non existing resourceDirectory /media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/src/main/resources
+[INFO] [freehep-nar:nar-resources]
+[INFO] [compiler:compile]
+[INFO] No sources to compile
+[INFO] [freehep-nar:nar-javah]
+[INFO] [freehep-nar:nar-compile]
+[INFO] Execute:Java13CommandLauncher: Executing 'g++' with arguments:
+'-w'
+'-Wall'
+'-W'
+'-pipe'
+'-fno-enforce-eh-specs'
+'-std=c++0x'
+'-D_USING_TANGO_8_OR_ABOVE_'
+'-gstabs+'
+'-c'
+'-O2'
+'-DSLSEIGER_TANGO_INDEPENDANT'
+'-DLinux'
+'-DGNU_GCC'
+'-D_REENTRANT'
+'-DENABLE_CRASH_REPORT'
+'-I/root/.m2/repository/fr/soleil/lib/LimaCore-amd64-Linux-gcc-shared-release/1.7.7/nar/include'
+'-I/root/.m2/repository/fr/soleil/lib/LimaProcesslib-amd64-Linux-gcc-shared-release/1.3.8/nar/include'
+'-I/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/frames'
+'-I/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/../../slsDetectorSoftware/commonFiles'
+'-I/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/../../slsDetectorSoftware/multiSlsDetector'
+'-I/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/../../slsDetectorSoftware/slsDetector'
+'-I/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/../../slsDetectorSoftware/slsDetectorAnalysis'
+'-I/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/../../slsDetectorSoftware/slsReceiverInterface'
+'-I/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/../../slsDetectorSoftware/threadFiles'
+'-I/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/../../slsReceiverSoftware/include'
+'/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/frames/SlsEigerCameraFramePart.cpp'
+'/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/frames/SlsEigerCameraThreadLima.cpp'
+'/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/frames/SlsEigerCameraFrame.cpp'
+'/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/frames/SlsEigerCameraThread.cpp'
+'/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/frames/SlsEigerMain.cpp'
+'/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/frames/StreamNexus.cpp'
+'/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/frames/SlsEigerCameraThreadTest.cpp'
+'/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/frames/SlsEigerCameraFrames.cpp'
+
+The ' characters around the executable and arguments are
+not part of the command.
+[INFO] Linking...
+[INFO] Starting link {4.4.7 -L/root/.m2/repository/fr/soleil/lib/LimaCore-amd64-Linux-gcc-shared-release/1.7.7/nar/lib/amd64-Linux-g++/shared -lLimaCore-amd64-Linux-gcc-shared-release-1.7.7 -Bdynamic -lpthread -Bdynamic -ldl -L/root/.m2/repository/fr/soleil/lib/LimaProcesslib-amd64-Linux-gcc-shared-release/1.3.8/nar/lib/amd64-Linux-g++/shared -Bdynamic -lLimaProcesslib-amd64-Linux-gcc-shared-release-1.3.8 -Bdynamic -lpthread -Bdynamic -ldl -L/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/bin -Bstatic -lSlsDetector -L/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/bin -Bstatic -lSlsReceiver -L/media/sf_Partage/DeviceSources/LIB_EL6_64/my_breakpad/lib -Bstatic -lbreakpad_client -L/media/sf_Partage/DeviceSources/LIB_EL6_64/omniORB-4.1.7-1.el6.x86_64/usr/lib64 -Bdynamic -lomniORB4 -L/media/sf_Partage/DeviceSources/LIB_EL6_64/omniORB-4.1.7-1.el6.x86_64/usr/lib64 -Bdynamic -lomniDynamic4 -L/media/sf_Partage/DeviceSources/LIB_EL6_64/omniORB-4.1.7-1.el6.x86_64/usr/lib64 -Bdynamic -lCOS4 -L/media/sf_Partage/DeviceSources/LIB_EL6_64/omniORB-4.1.7-1.el6.x86_64/usr/lib64 -Bdynamic -lomniCodeSets4 -L/media/sf_Partage/DeviceSources/LIB_EL6_64/omniORB-4.1.7-1.el6.x86_64/usr/lib64 -Bdynamic -lomnithread -L/media/sf_Partage/DeviceSources/LIB_EL6_64/zeromq-3.2.5/lib -Bdynamic -lzmq -L/media/sf_Partage/DeviceSources/LIB_EL6_64/libtango8-8.1.2-16.el6.maxlab.x86_64/usr/lib64 -Bdynamic -ltango -L/media/sf_Partage/DeviceSources/LIB_EL6_64/liblog4tango5-5.0.0-16.el6.maxlab.x86_64/usr/lib64 -Bdynamic -llog4tango -L/media/sf_Partage/DeviceSources/LIB_EL6_64/hdf5-1.8.16/lib -Bdynamic -lhdf5 -L/media/sf_Partage/DeviceSources/LIB_EL6_64/hdf5-1.8.16/lib -Bdynamic -lhdf5_cpp -L/media/sf_Partage/DeviceSources/LIB_EL6_64/hdf5-1.8.16/lib -Bdynamic -lhdf5_hl -L/media/sf_Partage/DeviceSources/LIB_EL6_64/hdf5-1.8.16/lib -Bdynamic -lhdf5_hl_cpp -L/media/sf_Partage/DeviceSources/LIB_EL6_64/lz4-r131/lib -Bdynamic -llz4 -L/media/sf_Partage/DeviceSources/LIB_EL6_64/yat-1.13.16/lib -Bdynamic -lYAT-amd64-Linux-gcc-shared-release-1.13.16 -L/media/sf_Partage/DeviceSources/LIB_EL6_64/yat4tango-1.10.6/lib -Bdynamic -lYAT4Tango-amd64-Linux-gcc-shared-release-1.10.6 -L/media/sf_Partage/DeviceSources/LIB_EL6_64/nexuscpp-3.2.2/lib -Bdynamic -lNexusCPP-amd64-Linux-gcc-shared-release-3.2.2 -L/media/sf_Partage/DeviceSources/LIB_EL6_64/gsl-1.11/lib -Bdynamic -lgsl -L/media/sf_Partage/DeviceSources/LIB_EL6_64/gsl-1.11/lib -Bdynamic -lgslcblas -L/media/sf_Partage/DeviceSources/LIB_EL6_64/nexuscpp-3.2.2/lib -Bdynamic -lNexusCPP-amd64-Linux-gcc-shared-release-3.2.2 -L/media/sf_Partage/DeviceSources/LIB_EL6_64/gsl-1.11/lib -Bdynamic -lgslcblas -Bdynamic -lpthread -Bdynamic -ldl -fexceptions -lstdc++}
+[INFO] Execute:Java13CommandLauncher: Executing 'gcc' with arguments:
+'-o'
+'ds_manual-acq'
+'../../obj/amd64-Linux-g++/SlsEigerCameraThreadLima.o'
+'../../obj/amd64-Linux-g++/StreamNexus.o'
+'../../obj/amd64-Linux-g++/SlsEigerCameraThread.o'
+'../../obj/amd64-Linux-g++/SlsEigerCameraFrames.o'
+'../../obj/amd64-Linux-g++/SlsEigerMain.o'
+'../../obj/amd64-Linux-g++/SlsEigerCameraFramePart.o'
+'../../obj/amd64-Linux-g++/SlsEigerCameraThreadTest.o'
+'../../obj/amd64-Linux-g++/SlsEigerCameraFrame.o'
+'-L/root/.m2/repository/fr/soleil/lib/LimaCore-amd64-Linux-gcc-shared-release/1.7.7/nar/lib/amd64-Linux-g++/shared'
+'-lLimaCore-amd64-Linux-gcc-shared-release-1.7.7'
+'-Wl,-Bdynamic'
+'-lpthread'
+'-Wl,-Bdynamic'
+'-ldl'
+'-L/root/.m2/repository/fr/soleil/lib/LimaProcesslib-amd64-Linux-gcc-shared-release/1.3.8/nar/lib/amd64-Linux-g++/shared'
+'-Wl,-Bdynamic'
+'-lLimaProcesslib-amd64-Linux-gcc-shared-release-1.3.8'
+'-Wl,-Bdynamic'
+'-lpthread'
+'-Wl,-Bdynamic'
+'-ldl'
+'-L/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/bin'
+'-Wl,-Bstatic'
+'-lSlsDetector'
+'-L/media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/bin'
+'-Wl,-Bstatic'
+'-lSlsReceiver'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/my_breakpad/lib'
+'-Wl,-Bstatic'
+'-lbreakpad_client'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/omniORB-4.1.7-1.el6.x86_64/usr/lib64'
+'-Wl,-Bdynamic'
+'-lomniORB4'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/omniORB-4.1.7-1.el6.x86_64/usr/lib64'
+'-Wl,-Bdynamic'
+'-lomniDynamic4'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/omniORB-4.1.7-1.el6.x86_64/usr/lib64'
+'-Wl,-Bdynamic'
+'-lCOS4'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/omniORB-4.1.7-1.el6.x86_64/usr/lib64'
+'-Wl,-Bdynamic'
+'-lomniCodeSets4'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/omniORB-4.1.7-1.el6.x86_64/usr/lib64'
+'-Wl,-Bdynamic'
+'-lomnithread'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/zeromq-3.2.5/lib'
+'-Wl,-Bdynamic'
+'-lzmq'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/libtango8-8.1.2-16.el6.maxlab.x86_64/usr/lib64'
+'-Wl,-Bdynamic'
+'-ltango'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/liblog4tango5-5.0.0-16.el6.maxlab.x86_64/usr/lib64'
+'-Wl,-Bdynamic'
+'-llog4tango'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/hdf5-1.8.16/lib'
+'-Wl,-Bdynamic'
+'-lhdf5'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/hdf5-1.8.16/lib'
+'-Wl,-Bdynamic'
+'-lhdf5_cpp'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/hdf5-1.8.16/lib'
+'-Wl,-Bdynamic'
+'-lhdf5_hl'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/hdf5-1.8.16/lib'
+'-Wl,-Bdynamic'
+'-lhdf5_hl_cpp'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/lz4-r131/lib'
+'-Wl,-Bdynamic'
+'-llz4'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/yat-1.13.16/lib'
+'-Wl,-Bdynamic'
+'-lYAT-amd64-Linux-gcc-shared-release-1.13.16'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/yat4tango-1.10.6/lib'
+'-Wl,-Bdynamic'
+'-lYAT4Tango-amd64-Linux-gcc-shared-release-1.10.6'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/nexuscpp-3.2.2/lib'
+'-Wl,-Bdynamic'
+'-lNexusCPP-amd64-Linux-gcc-shared-release-3.2.2'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/gsl-1.11/lib'
+'-Wl,-Bdynamic'
+'-lgsl'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/gsl-1.11/lib'
+'-Wl,-Bdynamic'
+'-lgslcblas'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/nexuscpp-3.2.2/lib'
+'-Wl,-Bdynamic'
+'-lNexusCPP-amd64-Linux-gcc-shared-release-3.2.2'
+'-L/media/sf_Partage/DeviceSources/LIB_EL6_64/gsl-1.11/lib'
+'-Wl,-Bdynamic'
+'-lgslcblas'
+'-Wl,-Bdynamic'
+'-lpthread'
+'-Wl,-Bdynamic'
+'-ldl'
+'-fexceptions'
+'-lstdc++'
+
+The ' characters around the executable and arguments are
+not part of the command.
+[INFO] [resources:testResources]
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] skip non existing resourceDirectory /media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/src/test/resources
+[INFO] [compiler:testCompile]
+[INFO] No sources to compile
+[INFO] [freehep-nar:nar-testCompile]
+[INFO] [surefire:test]
+[INFO] Tests are skipped.
+[INFO] [freehep-nar:nar-test]
+[INFO] [freehep-nar:nar-package]
+[INFO] Building zip: /media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/target/manual-acq-i386-Linux-gcc-release-1.0.0-noarch.nar
+[INFO] Building zip: /media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/target/manual-acq-i386-Linux-gcc-release-1.0.0-amd64-Linux-g++-bin.nar
+[INFO] Update NarInfo from linker parameters (Libs, SysLibs)
+[INFO] [jar:jar]
+[INFO] Building jar: /media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/target/manual-acq-i386-Linux-gcc-release-1.0.0.jar
+[INFO] [check:check-release {execution: check-release}]
+[INFO] check-release is disabled
+[INFO] [freehep-nar:nar-integration-test]
+[INFO] No tests to run.
+[INFO] [install:install]
+[INFO] Installing /media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/target/manual-acq-i386-Linux-gcc-release-1.0.0.jar to /root/.m2/repository/fr/soleil/device/manual-acq-i386-Linux-gcc-release/1.0.0/manual-acq-i386-Linux-gcc-release-1.0.0.jar
+[INFO] Installing /media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/target/manual-acq-i386-Linux-gcc-release-1.0.0-noarch.nar to /root/.m2/repository/fr/soleil/device/manual-acq-i386-Linux-gcc-release/1.0.0/manual-acq-i386-Linux-gcc-release-1.0.0-noarch.nar
+[INFO] Installing /media/sf_Partage/DeviceSources/Lima/camera/slsjungfrau/slsDetectorPackage-Eiger/manual/manual-acq/target/manual-acq-i386-Linux-gcc-release-1.0.0-amd64-Linux-g++-bin.nar to /root/.m2/repository/fr/soleil/device/manual-acq-i386-Linux-gcc-release/1.0.0/manual-acq-i386-Linux-gcc-release-1.0.0-amd64-Linux-g++-bin.nar
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESSFUL
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 19 seconds
+[INFO] Finished at: Fri Mar 29 12:15:08 CET 2019
+[INFO] Final Memory: 27M/64M
+[INFO] ------------------------------------------------------------------------

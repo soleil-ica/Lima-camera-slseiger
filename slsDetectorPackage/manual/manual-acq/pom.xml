@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>fr.soleil</groupId>
+        <artifactId>super-pom-C-CPP-device</artifactId>
+        <version>RELEASE</version>
+    </parent>
+
+    <groupId>fr.soleil.device</groupId>
+    <artifactId>manual-acq-${aol}-${mode}</artifactId>
+    <version>1.0.0</version>
+	
+    <packaging>nar</packaging>
+    <name>manual-acq</name>
+    <description>manual-acq</description>
+
+    <scm>
+        <connection>scm:git:git://github.com/soleil-ica/manual-acq.git</connection>
+        <developerConnection>scm:git:git://github.com/soleil-ica/manual-acq.git</developerConnection>
+        <url>https://github.com/soleil-ica/manual-acq</url>
+    </scm>
+    
+    <profiles>
+        <!-- PROFILE linux_32 -->
+        <profile>
+            <id>linux_32</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>                
+                <property>
+                    <name>env</name>
+                    <value>linux_32</value>
+                </property>
+            </activation>
+
+            <properties>
+                <PROCESSLIB.name>ProcessLib</PROCESSLIB.name>
+                <PROCESSLIB.version>1.3.8</PROCESSLIB.version>
+                <CORE.name>Core</CORE.name>
+                <CORE.version>1.7.7</CORE.version>
+            </properties>
+           
+            <dependencies>
+                <dependency>
+                    <groupId>fr.soleil.lib</groupId>
+                    <artifactId>LimaCore-${aol}-shared-${mode}</artifactId>
+                    <version>${CORE.version}</version>
+                </dependency>
+            </dependencies>
+            
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.freehep</groupId>
+                        <artifactId>freehep-nar-plugin</artifactId>
+                        <configuration>
+                            <cpp>
+                                <sourceDirectory>${project.basedir}</sourceDirectory>                        
+                                <includes>
+                                    <include>*.cpp</include>
+                                    <include>frames/*.cpp</include>
+                                </includes>
+                                
+                                <includePaths>                          
+                                    <includePath>frames</includePath>
+                                    <includePath>..\..\slsDetectorSoftware\commonFiles</includePath>
+                                    <includePath>..\..\slsDetectorSoftware\multiSlsDetector</includePath>
+                                    <includePath>..\..\slsDetectorSoftware\slsDetector</includePath>
+                                    <includePath>..\..\slsDetectorSoftware\slsDetectorAnalysis</includePath>
+                                    <includePath>..\..\slsDetectorSoftware\slsReceiverInterface</includePath>
+                                    <includePath>..\..\slsDetectorSoftware\threadFiles</includePath>
+                                    <includePath>..\..\slsReceiverSoftware\include</includePath>
+                                </includePaths>
+                                
+                                <defines>
+
+                                    <!-- Needed By Basler -->
+                                    <define>USE_GIGE</define>
+                                    <!-- Needed By Aviex -->
+                                    <define>OS_UNIX</define>
+                                    <!-- define which detector you need to ENABLE -->                            
+                                    <define>SLSEIGER_TANGO_INDEPENDANT</define>	
+                                </defines>               
+                            </cpp>
+                            <linker>
+                            <libs>
+                                <lib>
+                                    <!-- libSlsDetector (1.0.0) 64 -->
+                                    <name>SlsDetector</name>
+                                    <type>static</type>
+                                    <directory>../../bin/</directory>
+                                </lib>
+                                <lib>
+                                    <!-- libSlsReceiver (1.0.0) 64 -->
+                                    <name>SlsReceiver</name>
+                                    <type>static</type>
+                                    <directory>../../bin/</directory>
+                                </lib>
+                            </libs>
+                           </linker>
+                        </configuration>           
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+       
+</project>
