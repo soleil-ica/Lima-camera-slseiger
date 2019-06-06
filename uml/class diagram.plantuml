@@ -1,0 +1,141 @@
+@startuml
+
+title <b>SlsEiger Lima Detector - Class Diagram - 2019/04/04</b>\n 
+
+skinparam classFontSize 13
+
+'----------------------------------------------------------------------------
+package "Lima Interface" #DDDDDD {
+
+class HwInterface #TECHNOLOGY {
+}
+
+class SlsEiger::Interface {
+}
+
+class HwDetInfoCtrlObj #TECHNOLOGY {
+}
+
+class HwSyncCtrlObj #TECHNOLOGY {
+}
+
+class SlsEiger::SyncCtrlObj {
+}
+
+class SlsEiger::DetInfoCtrlObj {
+}
+
+HwInterface <|-- SlsEiger::Interface
+
+HwSyncCtrlObj    <|--up SlsEiger::SyncCtrlObj
+HwDetInfoCtrlObj <|--up SlsEiger::DetInfoCtrlObj
+
+SlsEiger::Interface o--- "1"  SlsEiger::DetInfoCtrlObj
+SlsEiger::Interface o--- "1"  SlsEiger::SyncCtrlObj
+}
+
+'----------------------------------------------------------------------------
+class SlsEiger::Camera {
+  -m_detector
+  -m_thread
+  -m_frames_manager
+}
+
+'----------------------------------------------------------------------------
+package "hardware management" #DDDDDD { 
+
+
+class SlsEiger::Detector {
+ -m_frames_manager
+ -m_detector_control
+ -m_detector_receivers
+}
+
+class slsDetectorUsers #SkyBlue { 
+}
+
+class SlsEiger::Receivers { 
+ -m_detector
+}
+
+class SlsEiger::Receiver {
+ -m_receiver
+ -m_host_name
+ -m_tcpip_port
+ -m_receiver_index
+ -m_receivers
+}
+
+class slsReceiverUsers #SkyBlue {
+}
+
+SlsEiger::Camera o--right- "1" SlsEiger::Detector : m_detector
+SlsEiger::Interface o--left- SlsEiger::Camera : m_cam
+
+SlsEiger::Detector o--up- "1" slsDetectorUsers : "m_detector_control "
+SlsEiger::Receiver o--- "1" slsReceiverUsers
+SlsEiger::Receivers o--right- "n" SlsEiger::Receiver
+SlsEiger::Receiver --> SlsEiger::Receivers : use
+SlsEiger::Detector o--- "1" SlsEiger::Receivers
+SlsEiger::Receivers --> SlsEiger::Detector : use
+slsReceiverUsers --> SlsEiger::Receivers : callbacks
+}
+
+'----------------------------------------------------------------------------
+package "Frame manager" #DDDDDD {
+
+class SlsEiger::CameraFrames {
+ -m_received_frames
+ -m_not_merged_frames
+ -m_treated_frames
+ -m_received_frame_indexes
+}
+
+class SlsEiger::CameraFrame {
+ -m_index        
+ -m_timestamp
+ -m_parts
+}
+
+class SlsEiger::CameraFramePart {
+ -m_pos_x
+ -m_pos_y        
+ -m_data_pointer
+ -m_data_byte_size
+}
+
+SlsEiger::CameraFrames o--left- "n" SlsEiger::CameraFrame
+
+SlsEiger::CameraFrame o--left- "n" SlsEiger::CameraFramePart
+
+SlsEiger::Camera o--- "1" SlsEiger::CameraFrames : "m_frames_manager"
+
+SlsEiger::Detector --> SlsEiger::CameraFrames : use
+
+SlsEiger::Detector --> SlsEiger::CameraFramePart : use
+
+}
+
+'----------------------------------------------------------------------------
+'----------------------------------------------------------------------------
+package "Acquisition thread" #DDDDDD {
+
+class SlsEiger::CameraThread {
+ -m_cam
+ -m_frames_manager
+}
+
+class CmdThread #TECHNOLOGY {
+}
+
+CmdThread <|--up SlsEiger::CameraThread
+SlsEiger::Camera o-- SlsEiger::CameraThread : m_thread
+SlsEiger::CameraThread --> SlsEiger::Camera : use
+SlsEiger::CameraThread --> SlsEiger::CameraFrames : use
+}
+
+
+
+
+
+@enduml
