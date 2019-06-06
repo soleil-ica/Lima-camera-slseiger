@@ -47,6 +47,12 @@ namespace lima
         // pre-defines the Detector class
         class Detector;
 
+        // pre-defines the CameraFrames class
+        class CameraFrames;
+
+        // pre-defines the CameraThread class
+        class CameraThread;
+
         /***********************************************************************
          * \class Camera
          * \brief Hardware control object interface
@@ -74,6 +80,37 @@ namespace lima
                 HalfSpeed     , 
                 QuarterSpeed  , 
                 SuperSlowSpeed,
+            };
+
+            // parallel mode values
+            enum ParallelMode
+            {
+                NonParallel, 
+                Parallel   , 
+                Safe       , 
+            };
+
+            // gain mode values
+            enum GainMode 
+            { 
+                standard = 0,
+                low         ,
+                medium      ,
+                high        ,
+                very_high   ,
+            };
+
+            // temperature types
+            enum Temperature
+            {
+                hw_fpga = 0,
+                hw_fpgaext ,
+                hw_10ge    , 
+                hw_dcdc    , 
+                hw_sodl    , 
+                hw_sodr    , 
+                hw_fpgafl  , 
+                hw_fpgafr  , 
             };
 
             //==================================================================
@@ -105,12 +142,14 @@ namespace lima
                 void stopAcq();
 
                 // Acquisition data management
-/*                void acquisitionDataReady(const int      in_receiver_index,
-                                          const uint64_t in_frame_index   ,
+                void acquisitionDataReady(const int      in_receiver_index,
+                                          uint64_t       in_frame_index   ,
+                                          const int      in_pos_x         ,
+                                          const int      in_pos_y         ,
                                           const uint32_t in_packet_number ,
                                           const uint64_t in_timestamp     ,
                                           const char *   in_data_pointer  ,
-                                          const uint32_t in_data_size     );*/
+                                          const uint32_t in_data_size     );
 
                 //------------------------------------------------------------------
                 // status management
@@ -242,6 +281,9 @@ namespace lima
                 // Gets the internal buffer manager
                 HwBufferCtrlObj * getBufferCtrlObj();
 
+                // Gets the standard internal buffer manager
+                StdBufferCbMgr & getStdBufferCbMgr();
+
             //==================================================================
             // Related to commands (put & get)
             //==================================================================
@@ -272,17 +314,57 @@ namespace lima
                 // Sets the clock divider
                 void setClockDivider(lima::SlsEiger::Camera::ClockDivider in_clock_divider);
 
-                //==================================================================
-                // delay after trigger management
-                //==================================================================
-                // Gets the maximum delay after trigger of all modules (in seconds)
-                double getMaxDelayAfterTriggerAllModules(void);
+                //------------------------------------------------------------------
+                // parallel mode management
+                //------------------------------------------------------------------
+                // Gets the parallel mode 
+                lima::SlsEiger::Camera::ParallelMode getParallelMode();
 
-                // Gets the delay after trigger of one module (in seconds)
-                double getDelayAfterTrigger(int in_module_index);
+                // Sets the parallel mode
+                void setParallelMode(lima::SlsEiger::Camera::ParallelMode in_parallel_mode);
 
-                // Sets the delay after trigger (in seconds)
-                void setDelayAfterTrigger(const double & in_delay_after_trigger_sec);
+                //------------------------------------------------------------------
+                // overflow mode management
+                //------------------------------------------------------------------
+                // Gets the overflow mode
+                bool getOverflowMode();
+
+                // Sets the overflow mode
+                void setOverflowMode(bool in_overflow_mode);
+
+                //------------------------------------------------------------------
+                // sub frame exposure time management
+                //------------------------------------------------------------------
+                // Gets the sub frame exposure time
+                double getSubFrameExposureTime();
+
+                // Sets the sub frame exposure time
+                void setSubFrameExposureTime(double in_sub_frame_exposure_time);
+
+                //------------------------------------------------------------------
+                // gain mode management
+                //------------------------------------------------------------------
+                // Gets the gain mode
+                lima::SlsEiger::Camera::GainMode getGainMode();
+
+                // Sets the gain mode
+                void setGainMode(lima::SlsEiger::Camera::GainMode in_gain_mode);
+
+                //------------------------------------------------------------------
+                // count rate correction management
+                //------------------------------------------------------------------
+                // Gets the count rate correction in ns
+                int getCountRateCorrection();
+
+                // Sets the count rate correction in ns
+                void setCountRateCorrection(int in_count_rate_correction_ns);
+
+                //------------------------------------------------------------------
+                // temperature management
+                //------------------------------------------------------------------
+                // Gets the temperature in millidegree Celsius of hardware element 
+                // for a specific module
+                int getTemperature(lima::SlsEiger::Camera::Temperature in_temperature_type, int in_module_index);
 
             //==================================================================
             // Related to event control object
@@ -296,13 +378,10 @@ namespace lima
             //==================================================================
                 // Gets the internal number of frames (for thread access)
                 uint64_t getInternalNbFrames();
-/*
-                // Gets the frame manager const access
-                const CameraFrames & getFrameManager() const;
 
-                // Gets the frame manager access
-                CameraFrames & getFrameManager();
-*/
+                // returns the current detector status
+                Camera::Status getDetectorStatus();
+
             //------------------------------------------------------------------
             // acquisition management
             //------------------------------------------------------------------
@@ -319,7 +398,7 @@ namespace lima
                 bool stopAcquisition();
 
         private:
-            //friend class CameraThread; // for getFrameManager(), getInternalNbFrames() and m_buffer_ctrl_obj accesses
+            friend class CameraThread; // for getFrameManager(), getInternalNbFrames() and m_buffer_ctrl_obj accesses
 
             //------------------------------------------------------------------
             // Lima event control object
@@ -329,75 +408,20 @@ namespace lima
             //------------------------------------------------------------------
             // Lima buffer control object
             //------------------------------------------------------------------
-            SoftBufferCtrlObj   m_buffer_ctrl_obj;
+            SoftBufferCtrlObj m_buffer_ctrl_obj;
 
             // Class for detector functionalities to embed the detector controls in the users custom interface e.g. EPICS, Lima etc.
             Detector * m_detector;
 
-
-
-
-
-
-
-
-            //------------------------------------------------------------------
-            // camera stuff
-            //------------------------------------------------------------------
-            // complete config file path
-            std::string m_config_file_name;
-
-            // readout time in seconds
-            double m_readout_time_sec;
-
-            // Number of frames in the receiver memory
-            long m_receiver_fifo_depth;
-
-            // Number of packets we should get in each receiver frame
-            uint32_t m_frame_packet_number;
-
-            // exposure time
-            double m_exposure_time;
-
-            // latency time
-            double m_latency_time;
-
-            // trigger mode label from sls sdk
-            std::string m_trig_mode_label;
-
-            // trigger mode 
-            lima::TrigMode m_trig_mode;
-
-            // number of frames per cycle from sls sdk
-            int64_t m_nb_frames_per_cycle;
-
-            // number of cycle from sls sdk
-            int64_t m_nb_cycles;
-
-            // number total of frames
-            int64_t m_nb_frames;
-
-            // last known status
-            Camera::Status m_status;
-            
-            // delay after trigger in seconds
-            double m_delay_after_trigger;
-
-            // clock divider
-            Camera::ClockDivider m_clock_divider;
-
-            // treshold energy
-            int m_threshold_energy_eV; 
-
             //------------------------------------------------------------------
             // main acquisition thread
             //------------------------------------------------------------------
-            //CameraThread m_thread;
+            CameraThread * m_thread;
 
             //------------------------------------------------------------------
             // frames manager
             //------------------------------------------------------------------
-            //CameraFrames m_frames_manager;
+            CameraFrames * m_frames_manager;
         };
     }
 }

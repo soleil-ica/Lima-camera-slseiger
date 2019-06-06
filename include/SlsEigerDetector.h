@@ -38,6 +38,9 @@
 // LOCAL
 #include "SlsEigerReceivers.h"
 
+// SYSTEM
+#include <vector>
+
 /**********************************************************************/
 // defines the SLS slsDetectorUsers class
 // Class for detector functionalities to embed the detector controls in the users custom interface e.g. EPICS, Lima etc.
@@ -49,14 +52,34 @@ namespace lima
     {
         static const int SLS_GET_VALUE = -1; // special value used to call set/get sls methods into get mode
 
-        static const std::string SLS_TRIGGER_MODE_AUTO    = "auto"   ; // there is no triggers enums in the current sls sdk
-        static const std::string SLS_TRIGGER_MODE_TRIGGER = "trigger"; // there is no triggers enums in the current sls sdk
+        // there is no triggers enums in the current sls sdk
+        static const std::string SLS_TRIGGER_MODE_AUTO    = "auto"         ; 
+        static const std::string SLS_TRIGGER_MODE_TRIGGER = "trigger"      ; 
+        static const std::string SLS_TRIGGER_MODE_BURST   = "burst_trigger"; 
+        static const std::string SLS_TRIGGER_MODE_GATING  = "gating"       ; 
 
-        static const std::string SLS_GAIN_MODE_DYNAMIC   = "dynamicgain" ; // there is no triggers enums in the current sls sdk
-        static const std::string SLS_GAIN_MODE_LOW       = "lowgain"     ; // there is no triggers enums in the current sls sdk
-        static const std::string SLS_GAIN_MODE_MEDIUM    = "mediumgain"  ; // there is no triggers enums in the current sls sdk
-        static const std::string SLS_GAIN_MODE_HIGH      = "highgain"    ; // there is no triggers enums in the current sls sdk
-        static const std::string SLS_GAIN_MODE_VERY_HIGH = "veryhighgain"; // there is no triggers enums in the current sls sdk
+        // there is no gain enums in the current sls sdk
+        static const std::string SLS_GAIN_MODE_STANDARD  = "standard"    ; 
+        static const std::string SLS_GAIN_MODE_UNDEFINED = "undefined"   ;
+
+        // These gain modes are not used for the moment
+        static const std::string SLS_GAIN_MODE_LOW       = "lowgain"     ; 
+        static const std::string SLS_GAIN_MODE_MEDIUM    = "mediumgain"  ; 
+        static const std::string SLS_GAIN_MODE_HIGH      = "highgain"    ; 
+        static const std::string SLS_GAIN_MODE_VERY_HIGH = "veryhighgain"; 
+
+        // there is no temperature enums in the current sls sdk
+        static const std::string SLS_TEMP_FPGA    = "temp_fpga"   ; 
+        static const std::string SLS_TEMP_FPGAEXT = "temp_fpgaext"; 
+        static const std::string SLS_TEMP_10GE    = "temp_10ge"   ; 
+        static const std::string SLS_TEMP_DCDC    = "temp_dcdc"   ; 
+        static const std::string SLS_TEMP_SODL    = "temp_sodl"   ; 
+        static const std::string SLS_TEMP_SODR    = "temp_sodr"   ; 
+        static const std::string SLS_TEMP_FPGA2   = "temp_fpgafl" ; 
+        static const std::string SLS_TEMP_FPGA3   = "temp_fpgafr" ; 
+
+        // pre-defines the Camera class
+        class Camera;
 
         /***********************************************************************
          * \class Detector
@@ -86,17 +109,51 @@ namespace lima
                 SuperSlowSpeed,
             };
 
+            // parallel mode values
+            enum ParallelMode
+            {
+                NonParallel, 
+                Parallel   , 
+                Safe       , 
+            };
+
             // trigger mode values
             enum TriggerMode 
             { 
-                TRIGGER_INTERNAL_SINGLE    = 0,
-                TRIGGER_EXTERNAL_SINGLE    ,
-                TRIGGER_EXTERNAL_MULTIPLE  ,
+                TRIGGER_INTERNAL_SINGLE    = 0, // one trigger for all frames (auto mode)
+                TRIGGER_EXTERNAL_SINGLE    ,    // one trigger for all frames (burst_trigger mode)
+                TRIGGER_EXTERNAL_MULTIPLE  ,    // one trigger for each frame (trigger)
+                TRIGGER_EXTERNAL_GATE      ,    // one trigger for each frame (gating)
+            };
+
+            // gain mode values
+            enum GainMode 
+            { 
+                standard = 0,
+                low         ,
+                medium      ,
+                high        ,
+                very_high   ,
+            };
+
+            // temperature types
+            enum Temperature
+            {
+                hw_fpga = 0,
+                hw_fpgaext ,
+                hw_10ge    , 
+                hw_dcdc    , 
+                hw_sodl    , 
+                hw_sodr    , 
+                hw_fpgafl  , 
+                hw_fpgafr  , 
+                hw_size    , // used to allocate a cache array for the values
             };
 
             //==================================================================
             // constructor
-            explicit Detector(const std::string & in_config_file_name      ,
+            explicit Detector(Camera            * in_camera                ,
+                              const std::string & in_config_file_name      ,
                               const double        in_readout_time_sec      ,
                               const long          in_receiver_fifo_depth   ,
                               const int           in_bit_depth             ,
@@ -172,6 +229,9 @@ namespace lima
             // Gets the internal number of frames (for thread access)
             uint64_t getInternalNbFrames();
 
+            // Gets the number of packets we should receive during the acquisition
+            uint32_t getFramePacketNumber();
+
             //------------------------------------------------------------------
             // clock divider management
             //------------------------------------------------------------------
@@ -181,30 +241,48 @@ namespace lima
             // Sets the clock divider
             void setClockDivider(Detector::ClockDivider in_clock_divider);
 
-            //==================================================================
-            // delay after trigger management
-            //==================================================================
-            // Gets the maximum delay after trigger of all modules (in seconds)
-            double getMaxDelayAfterTriggerAllModules(void);
+            //------------------------------------------------------------------
+            // parallel mode management
+            //------------------------------------------------------------------
+            // Gets the parallel mode 
+            Detector::ParallelMode getParallelMode();
 
-            // Gets the delay after trigger of one module (in seconds)
-            double getDelayAfterTrigger(int in_module_index);
+            // Sets the parallel mode
+            void setParallelMode(Detector::ParallelMode in_parallel_mode);
 
-            // Sets the delay after trigger (in seconds)
-            void setDelayAfterTrigger(const double & in_delay_after_trigger);
+            //------------------------------------------------------------------
+            // overflow mode management
+            //------------------------------------------------------------------
+            // Gets the overflow mode
+            bool getOverflowMode();
 
-            //==================================================================
+            // Sets the overflow mode
+            void setOverflowMode(bool in_overflow_mode);
+
+            //------------------------------------------------------------------
+            // sub frame exposure time management
+            //------------------------------------------------------------------
+            // Gets the sub frame exposure time
+            double getSubFrameExposureTime();
+
+            // Sets the sub frame exposure time
+            void setSubFrameExposureTime(double in_sub_frame_exposure_time);
+
+            //------------------------------------------------------------------
             // threshold energy management
-            //==================================================================
+            //------------------------------------------------------------------
             // Gets the threshold energy in eV
             int getThresholdEnergy();
 
             // Sets the threshold energy in eV
             void setThresholdEnergy(int in_threshold_energy_eV);
 
-            //==================================================================
+            //------------------------------------------------------------------
             // times management
-            //==================================================================
+            //------------------------------------------------------------------
+            // Gets the readout time 
+            double getReadoutTimeSec();
+
             //------------------------------------------------------------------
             // exposure time management
             //------------------------------------------------------------------
@@ -224,6 +302,31 @@ namespace lima
 
             // Sets the latency time
             void setLatencyTime(double in_latency_time);
+
+            //------------------------------------------------------------------
+            // gain mode management
+            //------------------------------------------------------------------
+            // Gets the gain mode
+            Detector::GainMode getGainMode(void);
+
+            // Sets the gain mode
+            void setGainMode(Detector::GainMode in_gain_mode);
+
+            //------------------------------------------------------------------
+            // count rate correction management
+            //------------------------------------------------------------------
+            // Gets the count rate correction in ns
+            int getCountRateCorrection();
+
+            // Sets the count rate correction in ns
+            void setCountRateCorrection(int in_count_rate_correction_ns);
+
+            //------------------------------------------------------------------
+            // temperature management
+            //------------------------------------------------------------------
+            // Gets the temperature in millidegree Celsius of hardware element 
+            // for a specific module
+            int getTemperature(Detector::Temperature in_temperature_type, int in_module_index);
 
             //==================================================================
             // Related to commands (put & get)
@@ -248,6 +351,16 @@ namespace lima
 
             // stop detector real time acquisition
             bool stopAcquisition();
+
+            // Acquisition data management (Detector->Camera)
+            void acquisitionDataReady(const int      in_receiver_index,
+                                      uint64_t       in_frame_index   ,
+                                      const int      in_pos_x         ,
+                                      const int      in_pos_y         ,
+                                      const uint32_t in_packet_number ,
+                                      const uint64_t in_timestamp     ,
+                                      const char *   in_data_pointer  ,
+                                      const uint32_t in_data_size     );
 
             //==================================================================
             // status management
@@ -288,6 +401,9 @@ namespace lima
 
             // Controller class for detector receivers functionalities
             Receivers * m_detector_receivers;
+
+            // Camera access
+            Camera * m_camera;
 
             // last known status
             Detector::Status m_status;
@@ -370,8 +486,14 @@ namespace lima
             // clock divider
             Detector::ClockDivider m_clock_divider;
 
-            // delay after trigger in seconds for each modules
-            std::vector<double> m_delays_after_trigger;
+            // parallel mode
+            Detector::ParallelMode m_parallel_mode;
+
+            // overflow mode
+            bool m_overflow_mode;
+
+            // sub frame exposure time (for 32bits bit depth)
+            double m_sub_frame_exposure_time;
 
             // treshold energy
             int m_threshold_energy_eV; 
@@ -381,6 +503,22 @@ namespace lima
 
             // latency time
             double m_latency_time;
+
+            // number of packets we should receive in each acquisition callback 
+            uint32_t m_frame_packet_number;
+
+            // gain mode 
+            Detector::GainMode m_gain_mode;
+
+            // gain mode label from sls sdk
+            std::string m_gain_mode_label;
+
+            // count rate correction
+            int m_count_rate_correction_ns;
+
+            // temperatures of hardware elements
+            std::vector<std::vector<int>> m_temperatures      ; // temperature for several modules
+            std::vector<std::string>      m_temperature_labels;
 
             //------------------------------------------------------------------
             // mutex stuff

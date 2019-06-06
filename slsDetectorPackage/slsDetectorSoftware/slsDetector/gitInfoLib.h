@@ -1,6 +1,6 @@
-#define GITURL "git@github.com:soleil-ica/Lima-camera-slsjungfrau.git"
-#define GITREPUUID "8ddd3efb8a87d71c9103f4c6ce2576cab4289b7f"
-#define GITAUTH "Arafat_Noureddine"
-#define GITREV 0x28
-#define GITDATE 0x20190307
-#define GITBRANCH "sdk-4-0-0-update"
+#define GITURL "git@github.com:CedricCastel/Lima-camera-slseiger.git"
+#define GITREPUUID "8e334895bd22272799c349e2a878fab2924accec"
+#define GITAUTH "CedricCastel_"
+#define GITREV 0x2
+#define GITDATE 0x20190312
+#define GITBRANCH "master"

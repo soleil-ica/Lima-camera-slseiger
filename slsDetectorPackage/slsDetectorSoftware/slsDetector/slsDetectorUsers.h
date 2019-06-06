@@ -924,6 +924,7 @@ class slsDetectorUsers
     if (s== "ro_trigger") return 2;					\
     if (s== "gating") return 3;						\
     if (s== "triggered_gating") return 4;			\
+    if (s== "burst_trigger") return 5;			\
     return -1;							};
 
 

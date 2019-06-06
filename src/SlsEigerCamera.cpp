@@ -36,6 +36,9 @@
 #include "SlsEigerCamera.h"
 #include "SlsEigerDetector.h"
 
+#include "SlsEigerCameraFrames.h"
+#include "SlsEigerCameraThread.h"
+
 using namespace lima;
 using namespace lima::SlsEiger;
 
@@ -57,9 +60,11 @@ Camera::Camera(const std::string & in_config_file_name      ,
                const int           in_bit_depth             ,
                const long          in_frame_packet_number_8 ,
                const long          in_frame_packet_number_16,
-               const long          in_frame_packet_number_32)// : m_thread(*this), m_frames_manager(*this)
+               const long          in_frame_packet_number_32)
 {
-    m_detector = new Detector(in_config_file_name      ,
+    // creating the detector
+    m_detector = new Detector(this                     ,
+                              in_config_file_name      ,
                               in_readout_time_sec      ,
                               in_receiver_fifo_depth   ,
                               in_bit_depth             ,
@@ -67,8 +72,19 @@ Camera::Camera(const std::string & in_config_file_name      ,
                               in_frame_packet_number_16,
                               in_frame_packet_number_32);
 
+    // creating the camera frame manager
+    m_frames_manager = new CameraFrames(m_detector->getModulesNb() * 2, // 2 parts of images for each module
+                                        m_detector->getFramePacketNumber(), 
+                                        m_detector->getBitDepth()/8,
+                                        m_detector->getWidth (), 
+                                        m_detector->getHeight(), 
+                                        m_detector->getWidth ()/m_detector->getModulesNb(), 
+                                        m_detector->getHeight()/m_detector->getModulesNb());
+    // creating the camera thread
+    m_thread = new CameraThread(m_frames_manager, this);
+
     // starting the acquisition thread
-//    m_thread.start();
+    m_thread->start();
 }
 
 /************************************************************************
@@ -80,6 +96,12 @@ Camera::~Camera()
 
     // stopping the acquisition
     stopAcq();
+
+    // releasing the camera thread
+    delete m_thread;
+    
+    // releasing the camera frame manager
+    delete m_frames_manager;
 
     // releasing the detector
     delete m_detector;
@@ -109,7 +131,7 @@ void Camera::prepareAcq()
     }
 
     // clear the frames containers
-//    m_frames_manager.clear();
+    m_frames_manager->clear();
 }
 
 /*******************************************************************
@@ -117,8 +139,8 @@ void Camera::prepareAcq()
  *******************************************************************/
 void Camera::startAcq()
 {
-/*  m_thread.sendCmd(CameraThread::StartAcq);
-    m_thread.waitNotStatus(CameraThread::Idle);*/
+    m_thread->sendCmd(CameraThread::StartAcq);
+    m_thread->waitNotStatus(CameraThread::Idle);
 }
 
 /*******************************************************************
@@ -130,81 +152,50 @@ void Camera::stopAcq()
 
 	DEB_TRACE() << "executing StopAcq command...";
 
-/*    if(m_thread.getStatus() != CameraThread::Error)
+    if(m_thread->getStatus() != CameraThread::Error)
     {
-        m_thread.execStopAcq();
+        m_thread->execStopAcq();
 
         // Waiting for thread to finish or to be in error
-        m_thread.waitNotStatus(CameraThread::Running);
+        m_thread->waitNotStatus(CameraThread::Running);
     }
 
     // thread in error
-    if(m_thread.getStatus() == CameraThread::Error)
+    if(m_thread->getStatus() == CameraThread::Error)
     {
         // aborting & restart the thread
-        m_thread.abort();
-    }*/
+        m_thread->abort();
+    }
 }
 
 /************************************************************************
  * \brief Acquisition data management
  * \param m_receiver_index receiver index
- * \param in_frame_index frame index (starts at 0)
+ * \param in_frame_index frame index (starts at 1)
+ * \param in_pos_x horizontal position of the part in the final image (starts at 0)
+ * \param in_pos_y vertical position of the part in the final image (starts at 0)
  * \param in_packet_number number of packets caught for this frame
  * \param in_timestamp time stamp in 10MHz clock
  * \param in_data_pointer frame image pointer
  * \param in_data_size frame image size 
  ************************************************************************/
-/*
 void Camera::acquisitionDataReady(const int      in_receiver_index,
-                                  const uint64_t in_frame_index   ,
+                                  uint64_t       in_frame_index   ,
+                                  const int      in_pos_x         ,
+                                  const int      in_pos_y         ,
                                   const uint32_t in_packet_number ,
                                   const uint64_t in_timestamp     ,
                                   const char *   in_data_pointer  ,
                                   const uint32_t in_data_size     )
 {
-    DEB_MEMBER_FUNCT();
+    yat::SharedPtr<CameraFramePart> frame_part = new CameraFramePart(in_pos_x, in_pos_y,
+                                                                     in_packet_number,
+                                                                     in_timestamp,
+                                                                     (uint8_t*)in_data_pointer, in_data_size);
 
-    // the start of this call is in a sls callback, so we should be as fast as possible
-    // to avoid frames lost.
-    StdBufferCbMgr & buffer_mgr  = m_buffer_ctrl_obj.getBuffer();
-    lima::FrameDim   frame_dim   = buffer_mgr.getFrameDim();
-    int              mem_size    = frame_dim.getMemSize();
-
-    // checking the frame size
-    if(mem_size != in_data_size)
-    {
-        DEB_TRACE() << "Incoherent sizes during frame copy process : " << 
-                       "sls size (" << in_data_size << ")" <<
-                       "lima size (" << mem_size << ")";
-    }
-    else
-    {
-        m_frames_manager.manageFirstFrameTreatment(in_frame_index, in_timestamp);
-
-        uint64_t relative_frame_index = m_frames_manager.computeRelativeFrameIndex(in_frame_index);
-
-        // ckecking if there is no packet lost.
-        if(in_packet_number == m_frame_packet_number)
-        {
-            uint64_t relative_timestamp   = m_frames_manager.computeRelativeTimestamp (in_timestamp  );
-
-            // copying the frame
-            char * dest_buffer = static_cast<char *>(buffer_mgr.getFrameBufferPtr(relative_frame_index));
-            memcpy(dest_buffer, in_data_pointer, in_data_size);
-
-            // giving the frame to the frames manager
-            CameraFrame frame(relative_frame_index, in_packet_number, relative_timestamp);
-            m_frames_manager.addReceived(in_receiver_index, frame);
-        }
-        else
-        // rejected frame
-        {
-            DEB_TRACE() << "Rejected Frame [ " << relative_frame_index << ", " << in_packet_number << " ]";
-        }
-    }
+    m_frames_manager->addFramePart(in_frame_index, frame_part );
 }
-*/
+
 /************************************************************************
  * \brief start receiver listening mode
  * \return true if ok, else false
@@ -254,7 +245,7 @@ Camera::Status Camera::getStatus()
 
     Camera::Status result;
 
-/*    int thread_status = m_thread.getStatus();
+    int thread_status = m_thread->getStatus();
 
     // error during the acquisition management ?
     // the device becomes in error state.
@@ -270,21 +261,22 @@ Camera::Status Camera::getStatus()
     {
         result = Camera::Running;
     }
-    else*/
+    else
     // the device is not in acquisition or in error, so we can read the hardware camera status
     {
-        result = static_cast<Camera::Status>(m_detector->getStatus());
-
-/*        if(detector_status == Detector::Status::Idle   ) result = Camera::Status::Idle   ; else
-        if(detector_status == Detector::Status::Waiting) result = Camera::Status::Waiting; else
-        if(detector_status == Detector::Status::Running) result = Camera::Status::Running; else
-        if(detector_status == Detector::Status::Error  ) result = Camera::Status::Error  ; else
-        {
-            THROW_HW_ERROR(ErrorType::Error) << "Camera::getStatus error, unknown detector state!";
-        }*/
+        result = getDetectorStatus();
     }
 
     return result;
+}
+
+/************************************************************************
+ * \brief returns the current detector status
+ * \return current hardware status
+ ************************************************************************/
+Camera::Status Camera::getDetectorStatus()
+{
+    return static_cast<Camera::Status>(m_detector->getStatus());
 }
 
 //------------------------------------------------------------------
@@ -296,10 +288,8 @@ Camera::Status Camera::getStatus()
  *******************************************************************/
 uint64_t Camera::getNbAcquiredFrames() const
 {
-    DEB_MEMBER_FUNCT();
-
     // reading in the number of treated frames in the frame manager
-    return 0; //m_frames_manager.getNbTreatedFrames();
+    return m_frames_manager->getNbTreatedFrames();
 }
 
 /************************************************************************
@@ -310,31 +300,9 @@ void Camera::getNbFrames(size_t & out_received  ,
                          size_t & out_not_merged,
                          size_t & out_treated   ) const
 {
-    DEB_MEMBER_FUNCT();
-
     // reading in the number of frames in the frame manager
-    //m_frames_manager.getNbFrames(out_received, out_not_merged, out_treated);
+    m_frames_manager->getNbFrames(out_received, out_not_merged, out_treated);
 }
-
-/*******************************************************************
- * \brief Gets the frame manager const access
- * \return frame manager const reference
- *******************************************************************/
-/*const CameraFrames & Camera::getFrameManager() const
-{
-    DEB_MEMBER_FUNCT();
-    return m_frames_manager;
-}*/
-
-/*******************************************************************
- * \brief Gets the frame manager access
- * \return frame manager reference
- *******************************************************************/
-/*CameraFrames & Camera::getFrameManager()
-{
-    DEB_MEMBER_FUNCT();
-    return m_frames_manager;
-}*/
 
 //==================================================================
 // Related to HwDetInfoCtrlObj
@@ -454,7 +422,9 @@ void Camera::setImageType(lima::ImageType in_type)
             break;
     }
 
-    m_detector->setBitDepth(bit_depth);
+    // At the moment, the bit depth is fixed during the init process (in detector class).
+    // No need to change it again as we should also perhaps set others detector properties.
+    //m_detector->setBitDepth(bit_depth);
 }
 
 //------------------------------------------------------------------
@@ -539,6 +509,7 @@ bool Camera::checkTrigMode(lima::TrigMode in_trig_mode) const
         case lima::TrigMode::IntTrig      :
         case lima::TrigMode::ExtTrigSingle:
         case lima::TrigMode::ExtTrigMult  :
+        case lima::TrigMode::ExtGate      :
             valid_mode = true;
             break;
 
@@ -572,8 +543,12 @@ void Camera::setTrigMode(lima::TrigMode in_mode)
             detector_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_SINGLE;
             break;
 
-        case lima::TrigMode::ExtTrigMult  :
+        case lima::TrigMode::ExtTrigMult:
             detector_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE;
+            break;
+
+        case lima::TrigMode::ExtGate:
+            detector_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_GATE;
             break;
 
         default:
@@ -598,6 +573,7 @@ lima::TrigMode Camera::getTrigMode()
     if(detector_trigger_mode == Detector::TriggerMode::TRIGGER_INTERNAL_SINGLE  ) lima_trigger_mode = lima::TrigMode::IntTrig      ; else
     if(detector_trigger_mode == Detector::TriggerMode::TRIGGER_EXTERNAL_SINGLE  ) lima_trigger_mode = lima::TrigMode::ExtTrigSingle; else
     if(detector_trigger_mode == Detector::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE) lima_trigger_mode = lima::TrigMode::ExtTrigMult  ; else
+    if(detector_trigger_mode == Detector::TriggerMode::TRIGGER_EXTERNAL_GATE    ) lima_trigger_mode = lima::TrigMode::ExtGate      ; else
     {
         THROW_HW_ERROR(ErrorType::Error) << "Camera::getTrigMode : This camera trigger Mode is not managed!";
     }
@@ -710,7 +686,7 @@ HwSyncCtrlObj::ValidRangesType Camera::getValidRanges() const
 
     valid_ranges.min_exp_time = min_time;
     valid_ranges.max_exp_time = max_time;
-    valid_ranges.min_lat_time = m_readout_time_sec;
+    valid_ranges.min_lat_time = m_detector->getReadoutTimeSec();
     valid_ranges.max_lat_time = max_time;
 
     return valid_ranges;
@@ -725,8 +701,16 @@ HwSyncCtrlObj::ValidRangesType Camera::getValidRanges() const
  *******************************************************************/
 HwBufferCtrlObj * Camera::getBufferCtrlObj()
 {
-    DEB_MEMBER_FUNCT();
     return &m_buffer_ctrl_obj;
+}
+
+/*******************************************************************
+ * \brief Gets the standard internal buffer manager
+ * \return the internal buffer manager
+ *******************************************************************/
+StdBufferCbMgr & Camera::getStdBufferCbMgr()
+{
+    return m_buffer_ctrl_obj.getBuffer();
 }
 
 //==================================================================
@@ -806,34 +790,132 @@ void Camera::setClockDivider(lima::SlsEiger::Camera::ClockDivider in_clock_divid
 }
 
 /*******************************************************************
- * \brief Gets the maximum delay after trigger of all modules (in seconds)
- * \return max delay after trigger (in seconds)
+ * \brief Gets the parallel mode 
+ * \return the parallel mode
  *******************************************************************/
-double Camera::getMaxDelayAfterTriggerAllModules(void)
+lima::SlsEiger::Camera::ParallelMode Camera::getParallelMode()
 {
-    return m_detector->getMaxDelayAfterTriggerAllModules();
+    return static_cast<Camera::ParallelMode>(m_detector->getParallelMode());
 }
 
 /*******************************************************************
- * \brief Gets the delay after trigger of one module (in seconds)
- * \param in_module_index module index (starts at 0)
- * \return delay after trigger (in seconds)
- *******************************************************************/
-double Camera::getDelayAfterTrigger(int in_module_index)
-{
-    return m_detector->getDelayAfterTrigger(in_module_index);
-}
-
-/*******************************************************************
- * \brief Sets the delay after trigger (in seconds)
- * \param in_delay_after_trigger needed delay after trigger (in seconds)
+ * \brief Sets the parallel mode
+ * \param in_parallelMode needed parallel mode
 *******************************************************************/
-void Camera::setDelayAfterTrigger(const double & in_delay_after_trigger_sec)
+void Camera::setParallelMode(lima::SlsEiger::Camera::ParallelMode in_parallel_mode)
 {
     DEB_MEMBER_FUNCT();
-    DEB_TRACE() << "Camera::setDelayAfterTrigger - " << DEB_VAR1(in_delay_after_trigger_sec) << " (sec)";
+    DEB_TRACE() << "Camera::setParallelMode - " << DEB_VAR1(in_parallel_mode);
 
-    m_detector->setDelayAfterTrigger(in_delay_after_trigger_sec);
+    m_detector->setParallelMode(static_cast<Detector::ParallelMode>(in_parallel_mode));
+}
+
+/*******************************************************************
+ * \brief Gets the overflow mode
+ * \return the overflow mode
+ *******************************************************************/
+bool Camera::getOverflowMode()
+{
+    return m_detector->getOverflowMode();
+}
+
+/*******************************************************************
+ * \brief Sets the overflow mode
+ * \param in_overflow_mode needed overflow mode
+*******************************************************************/
+void Camera::setOverflowMode(bool in_overflow_mode)
+{
+    DEB_MEMBER_FUNCT();
+    DEB_TRACE() << "Camera::setOverflowMode - " << DEB_VAR1(in_overflow_mode);
+
+    m_detector->setOverflowMode(in_overflow_mode);
+}
+
+//------------------------------------------------------------------
+// sub frame exposure time management
+//------------------------------------------------------------------
+/*******************************************************************
+ * \brief Gets the sub frame exposure time
+ * \return sub frame exposure time
+ *******************************************************************/
+double Camera::getSubFrameExposureTime()
+{
+    return m_detector->getSubFrameExposureTime();
+}
+
+/*******************************************************************
+ * \brief Sets the sub frame exposure time
+ * \param in_sub_frame_exposure_time needed sub frame exposure time
+*******************************************************************/
+void Camera::setSubFrameExposureTime(double in_sub_frame_exposure_time)
+{
+    DEB_MEMBER_FUNCT();
+    DEB_TRACE() << "Camera::setSubFrameExposureTime - " << DEB_VAR1(in_sub_frame_exposure_time);
+
+    m_detector->setSubFrameExposureTime(in_sub_frame_exposure_time);
+}
+
+//------------------------------------------------------------------
+// gain mode management
+//------------------------------------------------------------------
+/*******************************************************************
+ * \brief Gets the gain mode
+ * \return gain mode
+ *******************************************************************/
+lima::SlsEiger::Camera::GainMode Camera::getGainMode()
+{
+    return static_cast<Camera::GainMode>(m_detector->getGainMode());
+}
+
+/*******************************************************************
+ * \brief Sets the gain mode
+ * \param in_gain_mode needed gain mode 
+ *******************************************************************/
+void Camera::setGainMode(lima::SlsEiger::Camera::GainMode in_gain_mode)
+{
+    DEB_MEMBER_FUNCT();
+    DEB_TRACE() << "Camera::setGainMode - " << DEB_VAR1(in_gain_mode);
+
+    m_detector->setGainMode(static_cast<Detector::GainMode>(in_gain_mode));
+}
+
+//------------------------------------------------------------------
+// count rate correction management
+//------------------------------------------------------------------
+/*******************************************************************
+ * \brief Gets the count rate correction in ns
+ * \return count rate correction in eV (0 disabled, 1 default value)
+ *******************************************************************/
+int Camera::getCountRateCorrection()
+{
+    return m_detector->getCountRateCorrection();
+}
+
+/*******************************************************************
+ * \brief Sets the count rate correction in ns
+ * \param in_count_rate_correction_ns needed count rate correction in ns
+*******************************************************************/
+void Camera::setCountRateCorrection(int in_count_rate_correction_ns)
+{
+    DEB_MEMBER_FUNCT();
+    DEB_TRACE() << "Camera::setCountRateCorrection - " << DEB_VAR1(in_count_rate_correction_ns);
+
+    m_detector->setCountRateCorrection(in_count_rate_correction_ns);
+}
+
+//------------------------------------------------------------------
+// temperature management
+//------------------------------------------------------------------
+/*******************************************************************
+ * \brief Gets the temperature in millidegree Celsius of hardware element 
+          for a specific module
+ * \param  in_temperature_type type of hardware to be monitored
+ * \param in_module_index module index (starts at 0)
+ * \return temperature in millidegree Celsius
+ *******************************************************************/
+int Camera::getTemperature(lima::SlsEiger::Camera::Temperature in_temperature_type, int in_module_index)
+{
+    return m_detector->getTemperature(static_cast<Detector::Temperature>(in_temperature_type), in_module_index);
 }
 
 //==================================================================

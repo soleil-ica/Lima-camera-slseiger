@@ -104,7 +104,7 @@ namespace lima
             void finishedAcquisition(int      in_receiver_index,
                                      uint64_t in_frames_nb     );
 
-            // Acquisition data management
+            // Acquisition data management (Receivers->Detector)
             void acquisitionDataReady(const int      in_receiver_index,
                                       uint64_t       in_frame_index   ,
                                       const int      in_pos_x         ,

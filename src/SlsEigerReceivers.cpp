@@ -248,15 +248,15 @@ void Receivers::acquisitionDataReady(const int      in_receiver_index,
                                      const char *   in_data_pointer  ,
                                      const uint32_t in_data_size     )
 {
-    DEB_MEMBER_FUNCT();
-
-    // the camera will manage the new frame
-/*    m_cam.acquisitionDataReady(in_receiver_index, 
-                               in_frame_index   ,
-                               in_packet_number ,
-                               in_timestamp     ,
-                               in_data_pointer  ,
-                               in_data_size     );*/
+    // the detector will manage the new frame
+    m_detector.acquisitionDataReady(in_receiver_index, 
+                                    in_frame_index   ,
+                                    in_pos_x         ,
+                                    in_pos_y         ,
+                                    in_packet_number ,
+                                    in_timestamp     ,
+                                    in_data_pointer  ,
+                                    in_data_size     );
 }
 
 //==================================================================
@@ -598,18 +598,21 @@ void Receivers::acquisitionDataReadyCallBack(char     * in_meta_data   ,
                     in_data_size);
 #endif
 
-    // we call the internal management of the callback using the user data
-    // the user data allows to have access to the 
-    // Receivers instance smart pointer and to the receiver index.
-    Receiver * user_data = static_cast<Receiver *>(in_user_data);
-    user_data->getReceivers()->acquisitionDataReady(user_data->getReceiverIndex(),
-                                                    detector_header.frameNumber-1, // frameNumber starts at 1
-                                                    detector_header.column       ,
-                                                    detector_header.row          ,
-                                                    detector_header.packetNumber ,
-                                                    detector_header.timestamp    ,
-                                                    in_data_pointer              ,
-                                                    in_data_size                 );
+    if((in_data_pointer != NULL) && (in_data_size > 0) && (in_user_data != NULL))
+    {
+        // we call the internal management of the callback using the user data
+        // the user data allows to have access to the 
+        // Receivers instance smart pointer and to the receiver index.
+        Receiver * user_data = static_cast<Receiver *>(in_user_data);
+        user_data->getReceivers()->acquisitionDataReady(user_data->getReceiverIndex(),
+                                                        detector_header.frameNumber-1, // frameNumber starts at 1
+                                                        detector_header.column       ,
+                                                        detector_header.row          ,
+                                                        detector_header.packetNumber ,
+                                                        detector_header.timestamp    ,
+                                                        in_data_pointer              ,
+                                                        in_data_size                 );
+    }
 }
 
 //========================================================================================
