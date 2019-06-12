@@ -72,11 +72,14 @@ Detector::Detector(Camera            * in_camera                ,
     m_exposure_time = 0.0;
     m_latency_time  = 0.0;
 
-    m_parallel_mode           = Detector::ParallelMode::NonParallel;
+    m_parallel_mode           = Detector::ParallelMode::Parallel;
     m_overflow_mode           = false;
     m_sub_frame_exposure_time = 0.0;
     m_threshold_energy_eV     = 0.0;
     m_gain_mode               = Detector::GainMode::standard;
+
+    m_count_rate_correction_activation = false;
+    m_count_rate_correction_ns         = 0    ;
 
     m_temperature_labels.resize(Detector::Temperature::hw_size);
 
@@ -186,7 +189,7 @@ void Detector::init(const std::string & in_config_file_name)
     // CameraReceivers needs direct access to camera (*this)
     m_detector_receivers = new Receivers(*this);
 
-    // creating the receivers (just one for Jungfrau)
+    // creating the receivers (two for eiger)
     m_detector_receivers->init(m_config_file_name);
 
     // set the number of modules
@@ -288,8 +291,20 @@ void Detector::init(const std::string & in_config_file_name)
     // setting the receiver fifo depth (number of frames in the receiver memory)
     m_detector_control->setReceiverFifoDepth(m_receiver_fifo_depth);
 
-    // setting of the default configuration (only one at the moment for the Eiger detector)
-    m_detector_control->setSettings(slsDetectorUsers::getDetectorSettings(SLS_GAIN_MODE_STANDARD));
+    // initing the internal copy of threshold energy
+    getThresholdEnergy();
+
+    // initing the internal copy of parallel mode
+    getParallelMode();
+
+    // initing the internal copy of overflow mode
+    getOverflowMode();
+
+    // initing the internal copy of sub frame exposure time
+    getSubFrameExposureTime();
+
+    // setting of the default configuration and loading the settings (trimbits, dacs, iodelay etc) to the detector
+    setGainMode(Detector::GainMode::standard);
 
     // initing the internal copies of exposure & latency times
     updateTimes();
@@ -306,11 +321,11 @@ void Detector::init(const std::string & in_config_file_name)
     }
 
     // initing some const data
-    // Module firmware version does not exist for Jungfrau
-    m_detector_type             = m_detector_control->getDetectorDeveloper();
-    m_detector_model            = m_detector_control->getDetectorType();
-    m_detector_firmware_version = convertVersionToString(m_detector_control->getDetectorFirmwareVersion());
-    m_detector_software_version = convertVersionToString(m_detector_control->getDetectorSoftwareVersion());
+    // Module firmware version does not exist for Eiger
+    m_detector_type                  = m_detector_control->getDetectorDeveloper();
+    m_detector_model                 = m_detector_control->getDetectorType();
+    m_detector_firmware_version      = convertVersionToString(m_detector_control->getDetectorFirmwareVersion());
+    m_detector_software_version      = convertVersionToString(m_detector_control->getDetectorSoftwareVersion());
     m_detector_this_software_version = convertVersionToString(m_detector_control->getThisSoftwareVersion());
 
     // logging some versions informations
@@ -1176,20 +1191,67 @@ void Detector::setGainMode(Detector::GainMode in_gain_mode)
         // conversion of gain mode label to gain mode index
         int gain_mode_index = slsDetectorUsers::getDetectorSettings(gain_mode);
 
-        // setting the current gain mode index
-        m_detector_control->setSettings(gain_mode_index);
+        // setting the current gain mode index and loading the settings (trimbits, dacs, iodelay etc) to the detector
+        int threshold_energy_eV = m_detector_control->setThresholdEnergy(m_threshold_energy_eV, 1, gain_mode_index); // 1 -> loading the trimbits
+
+        if(threshold_energy_eV == slsDetectorDefs::FAIL)
+        {
+            THROW_HW_ERROR(ErrorType::Error) << "setGainMode failed!";
+        }
     }
 
     // updating the internal data
     getGainMode();
+    getThresholdEnergy();
 }
 
 //------------------------------------------------------------------
 // count rate correction management
 //------------------------------------------------------------------
 /*******************************************************************
+ * \brief Gets the activation of count rate correction
+ * \return count rate correction activation
+ *******************************************************************/
+bool Detector::getCountRateCorrectionActivation()
+{
+    DEB_MEMBER_FUNCT();
+
+    // during acquisition, camera data access is not allowed because it
+    // could put the camera into an error state. 
+    // So we give the latest read value.
+    if(m_status == Detector::Status::Idle)
+    {
+        // protecting the sdk concurrent access
+        lima::AutoMutex sdk_mutex = sdkLock(); 
+
+        m_count_rate_correction_activation = (m_detector_control->enableCountRateCorrection(SLS_GET_VALUE) != 0);
+    }
+
+    return m_count_rate_correction_activation;
+}
+
+/*******************************************************************
+ * \brief Sets the activation of count rate correction
+ * \param in_count_rate_correction_activated  
+*******************************************************************/
+void Detector::setCountRateCorrectionActivation(bool in_count_rate_correction_activation)
+{
+    DEB_MEMBER_FUNCT();
+
+    // protecting the sdk concurrent access
+    {
+        lima::AutoMutex sdk_mutex = sdkLock(); 
+
+        m_detector_control->enableCountRateCorrection((in_count_rate_correction_activation) ? 1 : 0);
+    }
+
+    // updating the internal data
+    getCountRateCorrectionActivation();
+}
+
+/*******************************************************************
  * \brief Gets the count rate correction in ns
- * \return count rate correction in eV (0 disabled, 1 default value)
+ * \return count rate correction in eV (0 disabled else default value)
  *******************************************************************/
 int Detector::getCountRateCorrection()
 {
@@ -1207,25 +1269,6 @@ int Detector::getCountRateCorrection()
     }
 
     return m_count_rate_correction_ns;
-}
-
-/*******************************************************************
- * \brief Sets the count rate correction in ns
- * \param in_count_rate_correction_ns needed count rate correction in ns
-*******************************************************************/
-void Detector::setCountRateCorrection(int in_count_rate_correction_ns)
-{
-    DEB_MEMBER_FUNCT();
-
-    // protecting the sdk concurrent access
-    {
-        lima::AutoMutex sdk_mutex = sdkLock(); 
-
-        m_detector_control->enableCountRateCorrection(in_count_rate_correction_ns);
-    }
-
-    // updating the internal data
-    getCountRateCorrection();
 }
 
 //------------------------------------------------------------------

@@ -353,11 +353,14 @@ namespace lima
                 //------------------------------------------------------------------
                 // count rate correction management
                 //------------------------------------------------------------------
+                // Gets the activation of count rate correction
+                bool getCountRateCorrectionActivation();
+
+                // Sets the activation of count rate correction
+                void setCountRateCorrectionActivation(bool in_count_rate_correction_activation);
+
                 // Gets the count rate correction in ns
                 int getCountRateCorrection();
-
-                // Sets the count rate correction in ns
-                void setCountRateCorrection(int in_count_rate_correction_ns);
 
                 //------------------------------------------------------------------
                 // temperature management

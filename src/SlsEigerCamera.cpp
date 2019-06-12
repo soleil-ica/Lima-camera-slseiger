@@ -883,24 +883,33 @@ void Camera::setGainMode(lima::SlsEiger::Camera::GainMode in_gain_mode)
 // count rate correction management
 //------------------------------------------------------------------
 /*******************************************************************
+ * \brief Gets the activation of count rate correction
+ * \return count rate correction activation
+ *******************************************************************/
+bool Camera::getCountRateCorrectionActivation()
+{
+    return m_detector->getCountRateCorrectionActivation();
+}
+
+/*******************************************************************
+ * \brief Sets the activation of count rate correction
+ * \param in_count_rate_correction_activated  
+*******************************************************************/
+void Camera::setCountRateCorrectionActivation(bool in_count_rate_correction_activation)
+{
+    DEB_MEMBER_FUNCT();
+    DEB_TRACE() << "Camera::setCountRateCorrectionActivation - " << DEB_VAR1(in_count_rate_correction_activation);
+
+    m_detector->setCountRateCorrectionActivation(in_count_rate_correction_activation);
+}
+
+/*******************************************************************
  * \brief Gets the count rate correction in ns
- * \return count rate correction in eV (0 disabled, 1 default value)
+ * \return count rate correction in eV (0 disabled else default value)
  *******************************************************************/
 int Camera::getCountRateCorrection()
 {
     return m_detector->getCountRateCorrection();
-}
-
-/*******************************************************************
- * \brief Sets the count rate correction in ns
- * \param in_count_rate_correction_ns needed count rate correction in ns
-*******************************************************************/
-void Camera::setCountRateCorrection(int in_count_rate_correction_ns)
-{
-    DEB_MEMBER_FUNCT();
-    DEB_TRACE() << "Camera::setCountRateCorrection - " << DEB_VAR1(in_count_rate_correction_ns);
-
-    m_detector->setCountRateCorrection(in_count_rate_correction_ns);
 }
 
 //------------------------------------------------------------------
