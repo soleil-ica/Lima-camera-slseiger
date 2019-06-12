@@ -760,9 +760,11 @@ Detector::ClockDivider Detector::getClockDivider()
 void Detector::setClockDivider(Detector::ClockDivider in_clock_divider)
 {
     // protecting the sdk concurrent access
-    lima::AutoMutex sdk_mutex = sdkLock(); 
+    {
+        lima::AutoMutex sdk_mutex = sdkLock(); 
 
-    m_detector_control->setClockDivider(static_cast<int>(in_clock_divider));
+        m_detector_control->setClockDivider(static_cast<int>(in_clock_divider));
+    }
 
     // updating the internal data
     getClockDivider();
@@ -804,9 +806,11 @@ Detector::ParallelMode Detector::getParallelMode()
 void Detector::setParallelMode(Detector::ParallelMode in_parallel_mode)
 {
     // protecting the sdk concurrent access
-    lima::AutoMutex sdk_mutex = sdkLock(); 
+    {
+        lima::AutoMutex sdk_mutex = sdkLock(); 
 
-    m_detector_control->setParallelMode(static_cast<int>(in_parallel_mode));
+        m_detector_control->setParallelMode(static_cast<int>(in_parallel_mode));
+    }
 
     // updating the internal data
     getParallelMode();
@@ -848,9 +852,11 @@ bool Detector::getOverflowMode()
 void Detector::setOverflowMode(bool in_overflow_mode)
 {
     // protecting the sdk concurrent access
-    lima::AutoMutex sdk_mutex = sdkLock(); 
+    {
+        lima::AutoMutex sdk_mutex = sdkLock(); 
 
-    m_detector_control->setOverflowMode((in_overflow_mode) ? 1 : 0);
+        m_detector_control->setOverflowMode((in_overflow_mode) ? 1 : 0);
+    }
 
     // updating the internal data
     getOverflowMode();
@@ -894,9 +900,11 @@ double Detector::getSubFrameExposureTime()
 void Detector::setSubFrameExposureTime(double in_sub_frame_exposure_time)
 {
     // protecting the sdk concurrent access
-    lima::AutoMutex sdk_mutex = sdkLock(); 
+    {
+        lima::AutoMutex sdk_mutex = sdkLock(); 
 
-    m_detector_control->setSubFrameExposureTime(in_sub_frame_exposure_time, true); // in seconds
+        m_detector_control->setSubFrameExposureTime(in_sub_frame_exposure_time, true); // in seconds
+    }
 
     // updating the internal data
     getSubFrameExposureTime();
