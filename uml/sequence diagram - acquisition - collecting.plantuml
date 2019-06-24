@@ -1,0 +1,71 @@
+@startuml
+
+title <b>SlsEiger Lima Detector - Sequence Diagram  - Acquisition - Collecting frames - 17/06/2019</b>\n
+
+skinparam classFontSize 13
+ 
+'boundary SlsEiger
+
+entity slsReceiverUsers
+entity Receivers
+entity Camera
+entity Detector
+entity CameraFrames
+
+database CameraFrame
+database CameraFramePart
+
+database m_received_frames
+database m_received_frame_indexes
+database m_not_merged_frames
+
+== ==
+|||
+
+group Collecting frames
+
+slsReceiverUsers -> Receivers : acquisitionDataReadyCallBack (static)
+Receivers -> Receivers : acquisitionDataReady
+Receivers -> Detector : acquisitionDataReady
+Detector -> Camera : acquisitionDataReady
+Camera -> CameraFramePart : new
+Camera -> CameraFrames : addFramePart(frame part)
+
+CameraFrames->m_received_frames : find(frame index)
+
+alt frame already received
+    m_received_frames --> CameraFrames : frame
+  CameraFrames -> CameraFrame : frame->addPart(frame part)
+
+  alt frame complete
+    CameraFrames -> m_not_merged_frames : push_back(frame)
+    CameraFrames -> m_received_frames : erase(frame)
+    
+    group purge the previous incomplete frames
+      CameraFrames -> m_received_frame_indexes : front()
+        m_received_frame_indexes --> CameraFrames : frame to purge index
+      CameraFrames -> m_received_frame_indexes : pop_front()
+    
+      loop (frame to purge index != frame index)
+          CameraFrames -> m_received_frames : find(frame to purge index)
+          CameraFrames -> m_received_frames : erase(frame to purge index)
+
+        CameraFrames -> m_received_frame_indexes : front()
+          m_received_frame_indexes --> CameraFrames : frame to purge index
+        CameraFrames -> m_received_frame_indexes : pop_front()
+      end
+    end
+  end
+else frame was never received
+  CameraFrames -> CameraFrame : new
+    CameraFrame --> CameraFrames : frame
+  CameraFrames -> m_received_frames : insert(frame)
+  CameraFrames -> m_received_frame_indexes : push_back(frame index)
+  CameraFrames -> CameraFrame : addPart(frame part)
+end
+
+|||
+ 
+end
+
+@enduml

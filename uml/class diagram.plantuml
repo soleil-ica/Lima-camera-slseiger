@@ -1,6 +1,6 @@
 @startuml
 
-title <b>SlsEiger Lima Detector - Class Diagram - 2019/04/04</b>\n 
+title <b>SlsEiger Lima Detector - Class Diagram - 17/06/2019</b>\n 
 
 skinparam classFontSize 13
 
@@ -9,7 +9,7 @@ package "Lima Interface" #DDDDDD {
 
 class HwInterface #TECHNOLOGY {
 }
-
+ 
 class SlsEiger::Interface {
 }
 
