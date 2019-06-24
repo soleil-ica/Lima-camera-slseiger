@@ -277,8 +277,8 @@ void CameraThread::treatNotMergedFrames(lima::Timestamp in_start_timestamp)
     const double sleep_time_sec = 0.000001; // sleep the thread in seconds (1µs)
 
     yat::SharedPtr<CameraFrame> not_merged_frame      ;
-    char *                     image_buffer          ; 
-    std::size_t                image_buffer_byte_size;
+    char *                      image_buffer          ; 
+    std::size_t                 image_buffer_byte_size;
 
     // getting the first not merged frame from the frames container
     m_frames_manager->getFirstNotMerged(not_merged_frame);
@@ -395,8 +395,8 @@ void CameraThread::registerStartTimestamp(lima::Timestamp in_start_timestamp)
  * \param out_image_buffer_byte_size size of the image buffer in bytes
 ************************************************************************/
 void CameraThread::getImageBuffer(const yat::SharedPtr<CameraFrame> in_frame,
-                                      char *      & out_image_buffer           , 
-                                      std::size_t & out_image_buffer_byte_size )
+                                  char *      & out_image_buffer            , 
+                                  std::size_t & out_image_buffer_byte_size  )
 {
     DEB_MEMBER_FUNCT();
 
@@ -413,7 +413,7 @@ void CameraThread::getImageBuffer(const yat::SharedPtr<CameraFrame> in_frame,
  * \param in_start_timestamp start timestamp
 ************************************************************************/
 void CameraThread::TreatImageBufferReady(const yat::SharedPtr<CameraFrame> in_frame,
-                                             Timestamp in_start_timestamp)
+                                         Timestamp in_start_timestamp)
 {
     DEB_MEMBER_FUNCT();
 

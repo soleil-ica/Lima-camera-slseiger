@@ -63,7 +63,7 @@ namespace lima
 	
         class Receiver
         {
-            DEB_CLASS_NAMESPC(DebModCamera, "Receiver", "SlsJungfrau");
+            DEB_CLASS_NAMESPC(DebModCamera, "Receiver", "SlsEiger");
 
         public:
             //==================================================================

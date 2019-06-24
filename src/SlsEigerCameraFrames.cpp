@@ -394,9 +394,9 @@ bool CameraFrames::buildImage(yat::SharedPtr<CameraFrame>  in_frame             
             const uint16_t * s = reinterpret_cast<const uint16_t *>(in_image_buffer);
             for(int x = 0 ; x < 1024 ; x++)
             {
-        std::stringstream tempStream;
-        tempStream << "0x" << std::uppercase << std::hex << *(s+x);
-    DEB_TRACE() << x << "," << tempStream.str(); 
+                std::stringstream tempStream;
+                tempStream << "0x" << std::uppercase << std::hex << *(s+x);
+                DEB_TRACE() << x << "," << tempStream.str(); 
             }
         }*/
     }
