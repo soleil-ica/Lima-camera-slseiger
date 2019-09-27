@@ -356,8 +356,8 @@ bool CameraThread::stopAcquisition()
 ************************************************************************/
 bool CameraThread::isAcquisitionRunning()
 {
-    Camera::Status status = m_cam->getDetectorStatus();
-    return ((status == Camera::Waiting) || (status == Camera::Running));
+    SlsEiger::Status status = m_cam->getDetectorStatus();
+    return ((status == SlsEiger::Waiting) || (status == SlsEiger::Running));
 }
 
 /************************************************************************

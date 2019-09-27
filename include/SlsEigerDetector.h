@@ -37,6 +37,7 @@
 
 // LOCAL
 #include "SlsEigerReceivers.h"
+#include "SlsEigerTypes.h"
 
 // SYSTEM
 #include <vector>
@@ -91,65 +92,6 @@ namespace lima
             DEB_CLASS_NAMESPC(DebModCamera, "Detector", "SlsEiger");
 
         public:
-            // status values
-            enum Status
-            {
-                Idle   , // ready to start acquisition
-                Waiting, // waiting for trigger signal
-                Running, // acquisition is running 
-                Error  , // acquisition stopped externally, fifo full or unexpected error 
-            };
-
-            // clock divider values
-            enum ClockDivider
-            {
-                FullSpeed     , 
-                HalfSpeed     , 
-                QuarterSpeed  , 
-                SuperSlowSpeed,
-            };
-
-            // parallel mode values
-            enum ParallelMode
-            {
-                NonParallel, 
-                Parallel   , 
-                Safe       , 
-            };
-
-            // trigger mode values
-            enum TriggerMode 
-            { 
-                TRIGGER_INTERNAL_SINGLE    = 0, // one trigger for all frames (auto mode)
-                TRIGGER_EXTERNAL_SINGLE    ,    // one trigger for all frames (burst_trigger mode)
-                TRIGGER_EXTERNAL_MULTIPLE  ,    // one trigger for each frame (trigger)
-                TRIGGER_EXTERNAL_GATE      ,    // one trigger for each frame (gating)
-            };
-
-            // gain mode values
-            enum GainMode 
-            { 
-                standard = 0,
-                low         ,
-                medium      ,
-                high        ,
-                very_high   ,
-            };
-
-            // temperature types
-            enum Temperature
-            {
-                hw_fpga = 0,
-                hw_fpgaext ,
-                hw_10ge    , 
-                hw_dcdc    , 
-                hw_sodl    , 
-                hw_sodr    , 
-                hw_fpgafl  , 
-                hw_fpgafr  , 
-                hw_size    , // used to allocate a cache array for the values
-            };
-
             //==================================================================
             // constructor
             explicit Detector(Camera            * in_camera                ,
@@ -209,12 +151,12 @@ namespace lima
             //------------------------------------------------------------------
             // trigger mode management
             //------------------------------------------------------------------
-            // Sets the trigger mode
-            void setTriggerMode(const Detector::TriggerMode & in_trigger_mode);
+            // Sets the trigger mode 
+            void setTriggerMode(const lima::SlsEiger::TriggerMode & in_trigger_mode);
 
             // Gets the trigger mode
             // can not be const because internal members are updated during the call
-            Detector::TriggerMode getTriggerMode(void);
+            lima::SlsEiger::TriggerMode getTriggerMode(void);
 
             //------------------------------------------------------------------
             // number of frames management
@@ -236,19 +178,19 @@ namespace lima
             // clock divider management
             //------------------------------------------------------------------
             // Gets the clock divider
-            Detector::ClockDivider getClockDivider();
+            lima::SlsEiger::ClockDivider getClockDivider();
 
             // Sets the clock divider
-            void setClockDivider(Detector::ClockDivider in_clock_divider);
+            void setClockDivider(lima::SlsEiger::ClockDivider in_clock_divider);
 
             //------------------------------------------------------------------
             // parallel mode management
             //------------------------------------------------------------------
             // Gets the parallel mode 
-            Detector::ParallelMode getParallelMode();
+            lima::SlsEiger::ParallelMode getParallelMode();
 
             // Sets the parallel mode
-            void setParallelMode(Detector::ParallelMode in_parallel_mode);
+            void setParallelMode(lima::SlsEiger::ParallelMode in_parallel_mode);
 
             //------------------------------------------------------------------
             // overflow mode management
@@ -307,10 +249,10 @@ namespace lima
             // gain mode management
             //------------------------------------------------------------------
             // Gets the gain mode
-            Detector::GainMode getGainMode(void);
+            lima::SlsEiger::GainMode getGainMode(void);
 
             // Sets the gain mode
-            void setGainMode(Detector::GainMode in_gain_mode);
+            void setGainMode(lima::SlsEiger::GainMode in_gain_mode);
 
             //------------------------------------------------------------------
             // count rate correction management
@@ -329,7 +271,7 @@ namespace lima
             //------------------------------------------------------------------
             // Gets the temperature in millidegree Celsius of hardware element 
             // for a specific module
-            int getTemperature(Detector::Temperature in_temperature_type, int in_module_index);
+            int getTemperature(lima::SlsEiger::Temperature in_temperature_type, int in_module_index);
 
             //==================================================================
             // Related to commands (put & get)
@@ -369,7 +311,7 @@ namespace lima
             // status management
             //==================================================================
             // returns the current detector status
-            Detector::Status getStatus();
+            lima::SlsEiger::Status getStatus();
 
         private:
             // creates an autolock mutex for sdk methods access
@@ -409,7 +351,7 @@ namespace lima
             Camera * m_camera;
 
             // last known status
-            Detector::Status m_status;
+            SlsEiger::Status m_status;
 
             //------------------------------------------------------------------
             // configuration
@@ -478,7 +420,7 @@ namespace lima
             std::string m_trigger_mode_label;
 
             // trigger mode 
-            Detector::TriggerMode m_trigger_mode;
+            lima::SlsEiger::TriggerMode m_trigger_mode;
 
             // number of frames per cycle from sls sdk
             int64_t m_nb_frames_per_cycle;
@@ -487,10 +429,10 @@ namespace lima
             int64_t m_nb_cycles;
 
             // clock divider
-            Detector::ClockDivider m_clock_divider;
+            lima::SlsEiger::ClockDivider m_clock_divider;
 
             // parallel mode
-            Detector::ParallelMode m_parallel_mode;
+            lima::SlsEiger::ParallelMode m_parallel_mode;
 
             // overflow mode
             bool m_overflow_mode;
@@ -511,7 +453,7 @@ namespace lima
             uint32_t m_frame_packet_number;
 
             // gain mode 
-            Detector::GainMode m_gain_mode;
+            lima::SlsEiger::GainMode m_gain_mode;
 
             // gain mode label from sls sdk
             std::string m_gain_mode_label;

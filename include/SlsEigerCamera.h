@@ -38,6 +38,7 @@
 #include "lima/ThreadUtils.h"
 #include "lima/HwSyncCtrlObj.h"
 #include "lima/HwEventCtrlObj.h"
+#include "SlsEigerTypes.h"
 
 /**********************************************************************/
 namespace lima
@@ -64,55 +65,6 @@ namespace lima
             friend class Interface;
 
         public:
-            // status values
-            enum Status
-            {
-                Idle   , // ready to start acquisition
-                Waiting, // waiting for trigger signal
-                Running, // acquisition is running 
-                Error  , // acquisition stopped externally, fifo full or unexpected error 
-            };
-
-            // clock divider values
-            enum ClockDivider
-            {
-                FullSpeed     , 
-                HalfSpeed     , 
-                QuarterSpeed  , 
-                SuperSlowSpeed,
-            };
-
-            // parallel mode values
-            enum ParallelMode
-            {
-                NonParallel, 
-                Parallel   , 
-                Safe       , 
-            };
-
-            // gain mode values
-            enum GainMode 
-            { 
-                standard = 0,
-                low         ,
-                medium      ,
-                high        ,
-                very_high   ,
-            };
-
-            // temperature types
-            enum Temperature
-            {
-                hw_fpga = 0,
-                hw_fpgaext ,
-                hw_10ge    , 
-                hw_dcdc    , 
-                hw_sodl    , 
-                hw_sodr    , 
-                hw_fpgafl  , 
-                hw_fpgafr  , 
-            };
-
             //==================================================================
             // constructor
             Camera(const std::string & in_config_file_name      ,  // complete path to the configuration file
@@ -156,7 +108,7 @@ namespace lima
                 //------------------------------------------------------------------
                 // returns the current camera status
                 // can not be const because internal member is updated during the call
-                Camera::Status getStatus();
+                lima::SlsEiger::Status getStatus();
 
                 //------------------------------------------------------------------
                 // Acquired frames management
@@ -309,19 +261,19 @@ namespace lima
                 // clock divider management
                 //------------------------------------------------------------------
                 // Gets the clock divider
-                lima::SlsEiger::Camera::ClockDivider getClockDivider();
+                lima::SlsEiger::ClockDivider getClockDivider();
 
                 // Sets the clock divider
-                void setClockDivider(lima::SlsEiger::Camera::ClockDivider in_clock_divider);
+                void setClockDivider(lima::SlsEiger::ClockDivider in_clock_divider);
 
                 //------------------------------------------------------------------
                 // parallel mode management
                 //------------------------------------------------------------------
                 // Gets the parallel mode 
-                lima::SlsEiger::Camera::ParallelMode getParallelMode();
+                lima::SlsEiger::ParallelMode getParallelMode();
 
                 // Sets the parallel mode
-                void setParallelMode(lima::SlsEiger::Camera::ParallelMode in_parallel_mode);
+                void setParallelMode(lima::SlsEiger::ParallelMode in_parallel_mode);
 
                 //------------------------------------------------------------------
                 // overflow mode management
@@ -345,10 +297,10 @@ namespace lima
                 // gain mode management
                 //------------------------------------------------------------------
                 // Gets the gain mode
-                lima::SlsEiger::Camera::GainMode getGainMode();
+                lima::SlsEiger::GainMode getGainMode();
 
                 // Sets the gain mode
-                void setGainMode(lima::SlsEiger::Camera::GainMode in_gain_mode);
+                void setGainMode(lima::SlsEiger::GainMode in_gain_mode);
 
                 //------------------------------------------------------------------
                 // count rate correction management
@@ -367,7 +319,7 @@ namespace lima
                 //------------------------------------------------------------------
                 // Gets the temperature in millidegree Celsius of hardware element 
                 // for a specific module
-                int getTemperature(lima::SlsEiger::Camera::Temperature in_temperature_type, int in_module_index);
+                int getTemperature(lima::SlsEiger::Temperature in_temperature_type, int in_module_index);
 
             //==================================================================
             // Related to event control object
@@ -383,7 +335,7 @@ namespace lima
                 uint64_t getInternalNbFrames();
 
                 // returns the current detector status
-                Camera::Status getDetectorStatus();
+                lima::SlsEiger::Status getDetectorStatus();
 
             //------------------------------------------------------------------
             // acquisition management

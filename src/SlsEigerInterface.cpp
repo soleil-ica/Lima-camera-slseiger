@@ -149,20 +149,20 @@ void Interface::getStatus(StatusType & status)
     DEB_MEMBER_FUNCT();
 
     HwInterface::StatusType::Basic hw_status;
-    Camera::Status camera_status = m_cam.getStatus();
+    SlsEiger::Status camera_status = m_cam.getStatus();
     
-    if(camera_status == Camera::Status::Idle)
+    if(camera_status == SlsEiger::Status::Idle)
     {
         hw_status = HwInterface::StatusType::Ready;
     }
     else
-    if((camera_status == Camera::Status::Waiting) || 
-       (camera_status == Camera::Status::Running))
+    if((camera_status == SlsEiger::Status::Waiting) || 
+       (camera_status == SlsEiger::Status::Running))
     {
         hw_status = HwInterface::StatusType::Exposure;
     }
     else
-    if(camera_status == Camera::Status::Error)
+    if(camera_status == SlsEiger::Status::Error)
     {
         hw_status = HwInterface::StatusType::Fault;
     }

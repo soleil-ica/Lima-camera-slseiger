@@ -239,11 +239,11 @@ bool Camera::stopAcquisition()
  * \brief returns the current camera status
  * \return current hardware status
  ************************************************************************/
-Camera::Status Camera::getStatus()
+lima::SlsEiger::Status Camera::getStatus()
 {
     DEB_MEMBER_FUNCT();
 
-    Camera::Status result;
+    SlsEiger::Status result;
 
     int thread_status = m_thread->getStatus();
 
@@ -251,7 +251,7 @@ Camera::Status Camera::getStatus()
     // the device becomes in error state.
     if(thread_status == CameraThread::Error)
     {
-        result = Camera::Error;
+        result = lima::SlsEiger::Error;
     }
     else
     // the device is in acquisition.
@@ -259,7 +259,7 @@ Camera::Status Camera::getStatus()
     // So we use the latest read camera status.
     if(thread_status == CameraThread::Running)
     {
-        result = Camera::Running;
+        result = lima::SlsEiger::Running;
     }
     else
     // the device is not in acquisition or in error, so we can read the hardware camera status
@@ -274,9 +274,9 @@ Camera::Status Camera::getStatus()
  * \brief returns the current detector status
  * \return current hardware status
  ************************************************************************/
-Camera::Status Camera::getDetectorStatus()
+lima::SlsEiger::Status Camera::getDetectorStatus()
 {
-    return static_cast<Camera::Status>(m_detector->getStatus());
+    return m_detector->getStatus();
 }
 
 //------------------------------------------------------------------
@@ -531,24 +531,24 @@ void Camera::setTrigMode(lima::TrigMode in_mode)
     DEB_MEMBER_FUNCT();
     DEB_TRACE() << "Camera::setTrigMode - " << DEB_VAR1(in_mode);
 
-    Detector::TriggerMode detector_trigger_mode;
+    lima::SlsEiger::TriggerMode detector_trigger_mode;
 
     switch (in_mode)
     {       
         case lima::TrigMode::IntTrig:
-            detector_trigger_mode = Detector::TriggerMode::TRIGGER_INTERNAL_SINGLE;
+            detector_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_INTERNAL_SINGLE;
             break;
 
         case lima::TrigMode::ExtTrigSingle:
-            detector_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_SINGLE;
+            detector_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_SINGLE;
             break;
 
         case lima::TrigMode::ExtTrigMult:
-            detector_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE;
+            detector_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE;
             break;
 
         case lima::TrigMode::ExtGate:
-            detector_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_GATE;
+            detector_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_GATE;
             break;
 
         default:
@@ -567,13 +567,13 @@ lima::TrigMode Camera::getTrigMode()
 {
     DEB_MEMBER_FUNCT();
 
-    lima::TrigMode        lima_trigger_mode;
-    Detector::TriggerMode detector_trigger_mode = m_detector->getTriggerMode();
+    lima::TrigMode lima_trigger_mode;
+    lima::SlsEiger::TriggerMode detector_trigger_mode = m_detector->getTriggerMode();
 
-    if(detector_trigger_mode == Detector::TriggerMode::TRIGGER_INTERNAL_SINGLE  ) lima_trigger_mode = lima::TrigMode::IntTrig      ; else
-    if(detector_trigger_mode == Detector::TriggerMode::TRIGGER_EXTERNAL_SINGLE  ) lima_trigger_mode = lima::TrigMode::ExtTrigSingle; else
-    if(detector_trigger_mode == Detector::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE) lima_trigger_mode = lima::TrigMode::ExtTrigMult  ; else
-    if(detector_trigger_mode == Detector::TriggerMode::TRIGGER_EXTERNAL_GATE    ) lima_trigger_mode = lima::TrigMode::ExtGate      ; else
+    if(detector_trigger_mode == lima::SlsEiger::TriggerMode::TRIGGER_INTERNAL_SINGLE  ) lima_trigger_mode = lima::TrigMode::IntTrig      ; else
+    if(detector_trigger_mode == lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_SINGLE  ) lima_trigger_mode = lima::TrigMode::ExtTrigSingle; else
+    if(detector_trigger_mode == lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE) lima_trigger_mode = lima::TrigMode::ExtTrigMult  ; else
+    if(detector_trigger_mode == lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_GATE    ) lima_trigger_mode = lima::TrigMode::ExtGate      ; else
     {
         THROW_HW_ERROR(ErrorType::Error) << "Camera::getTrigMode : This camera trigger Mode is not managed!";
     }
@@ -772,42 +772,42 @@ void Camera::setThresholdEnergy(int in_threshold_energy_eV)
  * \brief Gets the clock divider
  * \return clock divider
  *******************************************************************/
-lima::SlsEiger::Camera::ClockDivider Camera::getClockDivider()
+lima::SlsEiger::ClockDivider Camera::getClockDivider()
 {
-    return static_cast<Camera::ClockDivider>(m_detector->getClockDivider());
+    return m_detector->getClockDivider();
 }
 
 /*******************************************************************
  * \brief Sets the clock divider
  * \param in_clock_divider needed clock divider
 *******************************************************************/
-void Camera::setClockDivider(lima::SlsEiger::Camera::ClockDivider in_clock_divider)
+void Camera::setClockDivider(lima::SlsEiger::ClockDivider in_clock_divider)
 {
     DEB_MEMBER_FUNCT();
     DEB_TRACE() << "Camera::setClockDivider - " << DEB_VAR1(in_clock_divider);
 
-    m_detector->setClockDivider(static_cast<Detector::ClockDivider>(in_clock_divider));
+    m_detector->setClockDivider(in_clock_divider);
 }
 
 /*******************************************************************
  * \brief Gets the parallel mode 
  * \return the parallel mode
  *******************************************************************/
-lima::SlsEiger::Camera::ParallelMode Camera::getParallelMode()
+lima::SlsEiger::ParallelMode Camera::getParallelMode()
 {
-    return static_cast<Camera::ParallelMode>(m_detector->getParallelMode());
+    return m_detector->getParallelMode();
 }
 
 /*******************************************************************
  * \brief Sets the parallel mode
  * \param in_parallelMode needed parallel mode
 *******************************************************************/
-void Camera::setParallelMode(lima::SlsEiger::Camera::ParallelMode in_parallel_mode)
+void Camera::setParallelMode(lima::SlsEiger::ParallelMode in_parallel_mode)
 {
     DEB_MEMBER_FUNCT();
     DEB_TRACE() << "Camera::setParallelMode - " << DEB_VAR1(in_parallel_mode);
 
-    m_detector->setParallelMode(static_cast<Detector::ParallelMode>(in_parallel_mode));
+    m_detector->setParallelMode(in_parallel_mode);
 }
 
 /*******************************************************************
@@ -862,21 +862,21 @@ void Camera::setSubFrameExposureTime(double in_sub_frame_exposure_time)
  * \brief Gets the gain mode
  * \return gain mode
  *******************************************************************/
-lima::SlsEiger::Camera::GainMode Camera::getGainMode()
+lima::SlsEiger::GainMode Camera::getGainMode()
 {
-    return static_cast<Camera::GainMode>(m_detector->getGainMode());
+    return m_detector->getGainMode();
 }
 
 /*******************************************************************
  * \brief Sets the gain mode
  * \param in_gain_mode needed gain mode 
  *******************************************************************/
-void Camera::setGainMode(lima::SlsEiger::Camera::GainMode in_gain_mode)
+void Camera::setGainMode(lima::SlsEiger::GainMode in_gain_mode)
 {
     DEB_MEMBER_FUNCT();
     DEB_TRACE() << "Camera::setGainMode - " << DEB_VAR1(in_gain_mode);
 
-    m_detector->setGainMode(static_cast<Detector::GainMode>(in_gain_mode));
+    m_detector->setGainMode(in_gain_mode);
 }
 
 //------------------------------------------------------------------
@@ -922,9 +922,9 @@ int Camera::getCountRateCorrection()
  * \param in_module_index module index (starts at 0)
  * \return temperature in millidegree Celsius
  *******************************************************************/
-int Camera::getTemperature(lima::SlsEiger::Camera::Temperature in_temperature_type, int in_module_index)
+int Camera::getTemperature(lima::SlsEiger::Temperature in_temperature_type, int in_module_index)
 {
-    return m_detector->getTemperature(static_cast<Detector::Temperature>(in_temperature_type), in_module_index);
+    return m_detector->getTemperature(in_temperature_type, in_module_index);
 }
 
 //==================================================================

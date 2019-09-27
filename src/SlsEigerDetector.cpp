@@ -72,16 +72,16 @@ Detector::Detector(Camera            * in_camera                ,
     m_exposure_time = 0.0;
     m_latency_time  = 0.0;
 
-    m_parallel_mode           = Detector::ParallelMode::Parallel;
+    m_parallel_mode           = lima::SlsEiger::ParallelMode::Parallel;
     m_overflow_mode           = false;
     m_sub_frame_exposure_time = 0.0;
-    m_threshold_energy_eV     = 0.0;
-    m_gain_mode               = Detector::GainMode::standard;
+    m_threshold_energy_eV     = 4500.0; // default value
+    m_gain_mode               = lima::SlsEiger::GainMode::undefined;
 
     m_count_rate_correction_activation = false;
     m_count_rate_correction_ns         = 0    ;
 
-    m_temperature_labels.resize(Detector::Temperature::hw_size);
+    m_temperature_labels.resize(lima::SlsEiger::Temperature::hw_size);
 
     m_temperature_labels[hw_fpga]    = SLS_TEMP_FPGA;
     m_temperature_labels[hw_fpgaext] = SLS_TEMP_FPGAEXT;
@@ -100,7 +100,7 @@ Detector::Detector(Camera            * in_camera                ,
     m_frame_packet_number_32 = static_cast<uint32_t>(in_frame_packet_number_32);
 
     // important for the calls of updateTimes, updateTriggerData in the init method.
-    m_status = Detector::Status::Idle; 
+    m_status = SlsEiger::Status::Idle; 
 
     m_detector_type                  = "undefined";
     m_detector_model                 = "undefined";
@@ -291,9 +291,6 @@ void Detector::init(const std::string & in_config_file_name)
     // setting the receiver fifo depth (number of frames in the receiver memory)
     m_detector_control->setReceiverFifoDepth(m_receiver_fifo_depth);
 
-    // initing the internal copy of threshold energy
-    getThresholdEnergy();
-
     // initing the internal copy of parallel mode
     getParallelMode();
 
@@ -304,7 +301,8 @@ void Detector::init(const std::string & in_config_file_name)
     getSubFrameExposureTime();
 
     // setting of the default configuration and loading the settings (trimbits, dacs, iodelay etc) to the detector
-    setGainMode(Detector::GainMode::standard);
+    // Also, initing the the internal copies of gain mode and threshold energy
+    setGainMode(lima::SlsEiger::GainMode::standard);
 
     // initing the internal copies of exposure & latency times
     updateTimes();
@@ -317,7 +315,7 @@ void Detector::init(const std::string & in_config_file_name)
 
     for(int module_index = 0 ; module_index < m_modules_nb ; module_index++)
     {
-        m_temperatures[module_index].resize(Detector::Temperature::hw_size, 0);
+        m_temperatures[module_index].resize(lima::SlsEiger::Temperature::hw_size, 0);
     }
 
     // initing some const data
@@ -384,7 +382,7 @@ int Detector::getBitDepth()
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         // protecting the sdk concurrent access
         lima::AutoMutex sdk_mutex = sdkLock(); 
@@ -497,7 +495,7 @@ void Detector::updateTriggerData()
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         // protecting the sdk concurrent access
         {
@@ -522,22 +520,22 @@ void Detector::updateTriggerData()
         // computing the trigger mode
         if(m_trigger_mode_label == SLS_TRIGGER_MODE_AUTO)
         {
-            m_trigger_mode = Detector::TriggerMode::TRIGGER_INTERNAL_SINGLE;
+            m_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_INTERNAL_SINGLE;
         }
         else
         if(m_trigger_mode_label == SLS_TRIGGER_MODE_BURST)
         {
-            m_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_SINGLE;
+            m_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_SINGLE;
         }
         else
         if(m_trigger_mode_label == SLS_TRIGGER_MODE_TRIGGER)
         {
-            m_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE;
+            m_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE;
         }
         else
         if(m_trigger_mode_label == SLS_TRIGGER_MODE_GATING)
         {
-            m_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_GATE;
+            m_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_GATE;
         }
         else
         {
@@ -550,7 +548,7 @@ void Detector::updateTriggerData()
  * \brief Sets the trigger mode
  * \param in_trigger_mode needed trigger mode 
  *******************************************************************/
-void Detector::setTriggerMode(const Detector::TriggerMode & in_trigger_mode)
+void Detector::setTriggerMode(const lima::SlsEiger::TriggerMode & in_trigger_mode)
 {
     DEB_MEMBER_FUNCT();
 
@@ -562,19 +560,19 @@ void Detector::setTriggerMode(const Detector::TriggerMode & in_trigger_mode)
 
     switch (in_trigger_mode)
     {       
-        case Detector::TriggerMode::TRIGGER_INTERNAL_SINGLE:
+        case lima::SlsEiger::TriggerMode::TRIGGER_INTERNAL_SINGLE:
             trig_mode = SLS_TRIGGER_MODE_AUTO;
             break;
 
-        case Detector::TriggerMode::TRIGGER_EXTERNAL_SINGLE:
+        case lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_SINGLE:
             trig_mode = SLS_TRIGGER_MODE_BURST;
             break;
 
-        case Detector::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE:
+        case lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE:
             trig_mode = SLS_TRIGGER_MODE_TRIGGER;
             break;
 
-        case Detector::TriggerMode::TRIGGER_EXTERNAL_GATE:
+        case lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_GATE:
             trig_mode = SLS_TRIGGER_MODE_GATING;
             break;
 
@@ -607,14 +605,14 @@ void Detector::setTriggerMode(const Detector::TriggerMode & in_trigger_mode)
 
         switch (in_trigger_mode)
         {       
-            case Detector::TriggerMode::TRIGGER_INTERNAL_SINGLE:
-            case Detector::TriggerMode::TRIGGER_EXTERNAL_SINGLE:
+            case lima::SlsEiger::TriggerMode::TRIGGER_INTERNAL_SINGLE:
+            case lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_SINGLE:
                 nb_frames_per_cycle = m_nb_frames;
                 nb_cycles           = 1LL;
                 break;
 
-            case Detector::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE:
-            case Detector::TriggerMode::TRIGGER_EXTERNAL_GATE:
+            case lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE:
+            case lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_GATE:
                 nb_frames_per_cycle = 1LL;
                 nb_cycles           = m_nb_frames;
                 break;
@@ -632,22 +630,22 @@ void Detector::setTriggerMode(const Detector::TriggerMode & in_trigger_mode)
         // computing the trigger mode
         if(m_trigger_mode_label == SLS_TRIGGER_MODE_AUTO)
         {
-            m_trigger_mode = Detector::TriggerMode::TRIGGER_INTERNAL_SINGLE;
+            m_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_INTERNAL_SINGLE;
         }
         else
         if(m_trigger_mode_label == SLS_TRIGGER_MODE_BURST)
         {
-            m_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_SINGLE;
+            m_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_SINGLE;
         }
         else
         if(m_trigger_mode_label == SLS_TRIGGER_MODE_TRIGGER)
         {
-            m_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE;
+            m_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE;
         }
         else
         if(m_trigger_mode_label == SLS_TRIGGER_MODE_GATING)
         {
-            m_trigger_mode = Detector::TriggerMode::TRIGGER_EXTERNAL_GATE;
+            m_trigger_mode = lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_GATE;
         }
         else
         {
@@ -660,7 +658,7 @@ void Detector::setTriggerMode(const Detector::TriggerMode & in_trigger_mode)
  * \brief Gets the trigger mode
  * \return trigger mode
  *******************************************************************/
-Detector::TriggerMode Detector::getTriggerMode(void)
+lima::SlsEiger::TriggerMode Detector::getTriggerMode(void)
 {
     // updating the internal copies of trigger mode label, number of cyles, number of frames per cycle, number of frames
     updateTriggerData();
@@ -708,14 +706,14 @@ void Detector::setNbFrames(int64_t in_nb_frames)
 
     switch (m_trigger_mode)
     {       
-        case Detector::TriggerMode::TRIGGER_INTERNAL_SINGLE:
-        case Detector::TriggerMode::TRIGGER_EXTERNAL_SINGLE:
+        case lima::SlsEiger::TriggerMode::TRIGGER_INTERNAL_SINGLE:
+        case lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_SINGLE:
             nb_frames_per_cycle = in_nb_frames;
             nb_cycles           = 1LL;
             break;
 
-        case Detector::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE:
-        case Detector::TriggerMode::TRIGGER_EXTERNAL_GATE:
+        case lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_MULTIPLE:
+        case lima::SlsEiger::TriggerMode::TRIGGER_EXTERNAL_GATE:
             nb_frames_per_cycle = 1LL;
             nb_cycles           = in_nb_frames;
             break;
@@ -746,12 +744,12 @@ void Detector::setNbFrames(int64_t in_nb_frames)
  * \brief Gets the clock divider
  * \return clock divider
  *******************************************************************/
-Detector::ClockDivider Detector::getClockDivider()
+lima::SlsEiger::ClockDivider Detector::getClockDivider()
 {
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         int clock_divider;
 
@@ -762,7 +760,7 @@ Detector::ClockDivider Detector::getClockDivider()
             clock_divider = m_detector_control->setClockDivider(SLS_GET_VALUE);
         }
 
-        m_clock_divider = static_cast<enum ClockDivider>(clock_divider);
+        m_clock_divider = static_cast<lima::SlsEiger::ClockDivider>(clock_divider);
     }
 
     return m_clock_divider;
@@ -772,7 +770,7 @@ Detector::ClockDivider Detector::getClockDivider()
  * \brief Sets the clock divider
  * \param in_clock_divider needed clock divider
 *******************************************************************/
-void Detector::setClockDivider(Detector::ClockDivider in_clock_divider)
+void Detector::setClockDivider(lima::SlsEiger::ClockDivider in_clock_divider)
 {
     // protecting the sdk concurrent access
     {
@@ -792,12 +790,12 @@ void Detector::setClockDivider(Detector::ClockDivider in_clock_divider)
  * \brief Gets the parallel mode 
  * \return the parallel mode
  *******************************************************************/
-Detector::ParallelMode Detector::getParallelMode()
+lima::SlsEiger::ParallelMode Detector::getParallelMode()
 {
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         int parallel_mode;
 
@@ -808,7 +806,7 @@ Detector::ParallelMode Detector::getParallelMode()
             parallel_mode = m_detector_control->setParallelMode(SLS_GET_VALUE);
         }
 
-        m_parallel_mode = static_cast<enum ParallelMode>(parallel_mode);
+        m_parallel_mode = static_cast<lima::SlsEiger::ParallelMode>(parallel_mode);
     }
 
     return m_parallel_mode;
@@ -818,7 +816,7 @@ Detector::ParallelMode Detector::getParallelMode()
  * \brief Sets the parallel mode
  * \param in_parallelMode needed parallel mode
 *******************************************************************/
-void Detector::setParallelMode(Detector::ParallelMode in_parallel_mode)
+void Detector::setParallelMode(lima::SlsEiger::ParallelMode in_parallel_mode)
 {
     // protecting the sdk concurrent access
     {
@@ -843,7 +841,7 @@ bool Detector::getOverflowMode()
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         int overflow_mode;
 
@@ -891,7 +889,7 @@ double Detector::getSubFrameExposureTime()
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         double sub_frame_exposure_time;
 
@@ -939,7 +937,7 @@ int Detector::getThresholdEnergy()
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         int threshold_energy_eV;
 
@@ -975,7 +973,8 @@ void Detector::setThresholdEnergy(int in_threshold_energy_eV)
     {
         lima::AutoMutex sdk_mutex = sdkLock(); 
 
-        result = m_detector_control->setThresholdEnergy(in_threshold_energy_eV);
+        // setting the current gain mode index and loading the settings (trimbits, dacs, iodelay etc) to the detector
+        int result = m_detector_control->setThresholdEnergy(in_threshold_energy_eV, 1, -1); // 1 -> loads the trimbits, -1 -> uses current setting
     }
 
     if(result == slsDetectorDefs::FAIL)
@@ -998,7 +997,7 @@ void Detector::updateTimes()
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         double exposure_period;
 
@@ -1092,14 +1091,14 @@ void Detector::setLatencyTime(double in_latency_time)
  * \brief Gets the gain mode
  * \return gain mode
  *******************************************************************/
-Detector::GainMode Detector::getGainMode(void)
+lima::SlsEiger::GainMode Detector::getGainMode(void)
 {
     DEB_MEMBER_FUNCT();
 
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         // protecting the sdk concurrent access
         {
@@ -1113,29 +1112,34 @@ Detector::GainMode Detector::getGainMode(void)
         }
 
         // computing the trigger mode
-        if((m_gain_mode_label == SLS_GAIN_MODE_STANDARD) || (m_gain_mode_label == SLS_GAIN_MODE_UNDEFINED))
+        if(m_gain_mode_label == SLS_GAIN_MODE_UNDEFINED)
         {
-            m_gain_mode = Detector::GainMode::standard;
+            m_gain_mode = lima::SlsEiger::GainMode::undefined;
+        }
+        else
+        if(m_gain_mode_label == SLS_GAIN_MODE_STANDARD)
+        {
+            m_gain_mode = lima::SlsEiger::GainMode::standard;
         }
         else
         if(m_gain_mode_label == SLS_GAIN_MODE_LOW)
         {
-            m_gain_mode = Detector::GainMode::low;
+            m_gain_mode = lima::SlsEiger::GainMode::low;
         }
         else
         if(m_gain_mode_label == SLS_GAIN_MODE_MEDIUM)
         {
-            m_gain_mode = Detector::GainMode::medium;
+            m_gain_mode = lima::SlsEiger::GainMode::medium;
         }
         else
         if(m_gain_mode_label == SLS_GAIN_MODE_HIGH)
         {
-            m_gain_mode = Detector::GainMode::high;
+            m_gain_mode = lima::SlsEiger::GainMode::high;
         }
         else
         if(m_gain_mode_label == SLS_GAIN_MODE_VERY_HIGH)
         {
-            m_gain_mode = Detector::GainMode::very_high;
+            m_gain_mode = lima::SlsEiger::GainMode::very_high;
         }
         else
         {
@@ -1150,7 +1154,7 @@ Detector::GainMode Detector::getGainMode(void)
  * \brief Sets the gain mode
  * \param in_gain_mode needed gain mode 
  *******************************************************************/
-void Detector::setGainMode(Detector::GainMode in_gain_mode)
+void Detector::setGainMode(lima::SlsEiger::GainMode in_gain_mode)
 {
     DEB_MEMBER_FUNCT();
 
@@ -1159,23 +1163,23 @@ void Detector::setGainMode(Detector::GainMode in_gain_mode)
 
     switch (in_gain_mode)
     {       
-        case Detector::GainMode::standard:
+        case lima::SlsEiger::GainMode::standard:
             gain_mode = SLS_GAIN_MODE_STANDARD;
             break;
 
-        case Detector::GainMode::low:
+        case lima::SlsEiger::GainMode::low:
             gain_mode = SLS_GAIN_MODE_LOW;
             break;
 
-        case Detector::GainMode::medium:
+        case lima::SlsEiger::GainMode::medium:
             gain_mode = SLS_GAIN_MODE_MEDIUM;
             break;
 
-        case Detector::GainMode::high:
+        case lima::SlsEiger::GainMode::high:
             gain_mode = SLS_GAIN_MODE_HIGH;
             break;
 
-        case Detector::GainMode::very_high:
+        case lima::SlsEiger::GainMode::very_high:
             gain_mode = SLS_GAIN_MODE_VERY_HIGH;
             break;
 
@@ -1191,7 +1195,14 @@ void Detector::setGainMode(Detector::GainMode in_gain_mode)
         // conversion of gain mode label to gain mode index
         int gain_mode_index = slsDetectorUsers::getDetectorSettings(gain_mode);
 
+        if(gain_mode_index == -1)
+        {
+            THROW_HW_ERROR(ErrorType::Error) << "setGainMode failed!";
+        }
+
         // setting the current gain mode index and loading the settings (trimbits, dacs, iodelay etc) to the detector
+        DEB_TRACE() << "setThresholdEnergy  " << m_threshold_energy_eV << "," << gain_mode_index;
+
         int threshold_energy_eV = m_detector_control->setThresholdEnergy(m_threshold_energy_eV, 1, gain_mode_index); // 1 -> loading the trimbits
 
         if(threshold_energy_eV == slsDetectorDefs::FAIL)
@@ -1219,7 +1230,7 @@ bool Detector::getCountRateCorrectionActivation()
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         // protecting the sdk concurrent access
         lima::AutoMutex sdk_mutex = sdkLock(); 
@@ -1260,7 +1271,7 @@ int Detector::getCountRateCorrection()
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         // protecting the sdk concurrent access
         lima::AutoMutex sdk_mutex = sdkLock(); 
@@ -1281,14 +1292,14 @@ int Detector::getCountRateCorrection()
  * \param in_module_index module index (starts at 0)
  * \return temperature in millidegree Celsius
  *******************************************************************/
-int Detector::getTemperature(Detector::Temperature in_temperature_type, int in_module_index)
+int Detector::getTemperature(lima::SlsEiger::Temperature in_temperature_type, int in_module_index)
 {
     DEB_MEMBER_FUNCT();
 
     // during acquisition, camera data access is not allowed because it
     // could put the camera into an error state. 
     // So we give the latest read value.
-    if(m_status == Detector::Status::Idle)
+    if(m_status == SlsEiger::Status::Idle)
     {
         // protecting the sdk concurrent access
         lima::AutoMutex sdk_mutex = sdkLock(); 
@@ -1517,14 +1528,14 @@ void Detector::acquisitionDataReady(const int      in_receiver_index,
  * \brief returns the current detector status
  * \return current hardware status
  ************************************************************************/
-Detector::Status Detector::getStatus()
+lima::SlsEiger::Status Detector::getStatus()
 {
     DEB_MEMBER_FUNCT();
 
     // protecting the sdk concurrent access
     lima::AutoMutex sdk_mutex = sdkLock(); 
 
-    Detector::Status result;
+    SlsEiger::Status result;
 
     // In auto mode:
     // Detector starts with idle to running and at end of acquisition, returns to idle.
@@ -1549,13 +1560,13 @@ Detector::Status Detector::getStatus()
        (state == slsDetectorDefs::runStatus::STOPPED) ||
        (state == slsDetectorDefs::runStatus::RUN_FINISHED))
     {
-        result = Detector::Status::Idle;
+        result = SlsEiger::Status::Idle;
     }
     else
     // waiting for trigger or gate signal
     if(state == slsDetectorDefs::runStatus::WAITING)
     {
-        result = Detector::Status::Waiting;
+        result = SlsEiger::Status::Waiting;
     }
     else
     // waiting for trigger or gate signal or acquisition is running 
@@ -1563,13 +1574,13 @@ Detector::Status Detector::getStatus()
     if((state == slsDetectorDefs::runStatus::RUNNING) ||
        (state == slsDetectorDefs::runStatus::TRANSMITTING))
     {
-        result = Detector::Status::Running;
+        result = SlsEiger::Status::Running;
     }
     else
     // fifo full or unexpected error 
     if(state == slsDetectorDefs::runStatus::ERROR)
     {
-        result = Detector::Status::Error;
+        result = SlsEiger::Status::Error;
     }
     else
     // impossible state 
