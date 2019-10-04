@@ -53,15 +53,17 @@ using namespace lima::SlsEiger;
  * \param in_frame_packet_number_8 Number of packets we should get in each receiver frame for 8 bits mode
  * \param in_frame_packet_number_16 Number of packets we should get in each receiver frame for 16 bits mode
  * \param in_frame_packet_number_32 Number of packets we should get in each receiver frame for 32 bits mode
+ * \param in_live_mode_min_frame_period_sec Minimum period between frames for live mode
  ************************************************************************/
-Detector::Detector(Camera            * in_camera                ,
-                   const std::string & in_config_file_name      ,
-                   const double        in_readout_time_sec      ,
-                   const long          in_receiver_fifo_depth   ,
-                   const int           in_bit_depth             ,
-                   const long          in_frame_packet_number_8 ,
-                   const long          in_frame_packet_number_16,
-                   const long          in_frame_packet_number_32)
+Detector::Detector(Camera            * in_camera                        ,
+                   const std::string & in_config_file_name              ,
+                   const double        in_readout_time_sec              ,
+                   const long          in_receiver_fifo_depth           ,
+                   const int           in_bit_depth                     ,
+                   const long          in_frame_packet_number_8         ,
+                   const long          in_frame_packet_number_16        ,
+                   const long          in_frame_packet_number_32        ,
+                   const double        in_live_mode_min_frame_period_sec)
 {
     m_camera        = in_camera;
     m_modules_nb    = 0;
@@ -98,6 +100,9 @@ Detector::Detector(Camera            * in_camera                ,
     m_frame_packet_number_8  = static_cast<uint32_t>(in_frame_packet_number_8 );
     m_frame_packet_number_16 = static_cast<uint32_t>(in_frame_packet_number_16);
     m_frame_packet_number_32 = static_cast<uint32_t>(in_frame_packet_number_32);
+
+    m_live_mode_min_frame_period_sec = in_live_mode_min_frame_period_sec;
+    m_data_saved_for_live_mode = false;
 
     // important for the calls of updateTimes, updateTriggerData in the init method.
     m_status = SlsEiger::Status::Idle; 
@@ -660,10 +665,92 @@ void Detector::setTriggerMode(const lima::SlsEiger::TriggerMode & in_trigger_mod
  *******************************************************************/
 lima::SlsEiger::TriggerMode Detector::getTriggerMode(void)
 {
-    // updating the internal copies of trigger mode label, number of cyles, number of frames per cycle, number of frames
+    lima::SlsEiger::TriggerMode result;
+
+    // during the live mode, the previous trigger mode value is returned.
+    // The data change must be invisible for the Tango client 
+    if(m_data_saved_for_live_mode)
+    {
+        result = m_saved_trigger_mode;
+    }
+    else
+    {
+        // updating the internal copies of trigger mode label, number of cyles, number of frames per cycle, number of frames
+        updateTriggerData();
+
+        result = m_trigger_mode;
+    }
+
+    return result;
+}
+
+//------------------------------------------------------------------
+// live mode methods
+//------------------------------------------------------------------
+/*******************************************************************
+ * \brief Save the data which will be changed during live mode
+*******************************************************************/
+void Detector::saveDataBeforeLiveMode(void)
+{
+    m_data_saved_for_live_mode = true;
+
+    // be sure of the internal copies of exposure & latency times
+    updateTimes();
+
+    // be sure of the internal copies of trigger mode label, number of cyles, number of frames per cycle, number of frames
     updateTriggerData();
 
-    return m_trigger_mode;
+    // saving number total of frames
+    m_saved_nb_frames = m_nb_frames;
+
+    // saving trigger mode
+    m_saved_trigger_mode = m_trigger_mode;
+
+    // saving latency time
+    m_saved_latency_time = m_latency_time;
+}
+
+/*******************************************************************
+ * \brief Change some data before live mode
+ * \param in_out_nb_frames number of frames
+*******************************************************************/
+void Detector::changeDataBeforeLiveMode(int64_t & in_out_nb_frames)
+{
+    // we need to change the latency time if the period is too fast for live mode.
+    // the new period must be >= m_live_mode_min_frame_period_sec
+    double exposure_period = m_exposure_time + m_latency_time;
+
+    if(exposure_period < m_live_mode_min_frame_period_sec)
+    {
+        setLatencyTime(m_live_mode_min_frame_period_sec - m_exposure_time);
+    }
+
+    // we force the trigger mode auto during the live mode
+    setTriggerMode(lima::SlsEiger::TriggerMode::TRIGGER_INTERNAL_SINGLE);
+
+    // because the detector does not support a native live mode, we set the maximum supported number of frames
+    // the detector change will be done in the setNbFrames method
+    in_out_nb_frames = SLS_NB_FRAMES_LIVE_MODE;
+}
+
+/*******************************************************************
+ * \brief restore data which were saved before live mode
+*******************************************************************/
+void Detector::restoreDataAfterLiveMode(void)
+{
+    if(m_data_saved_for_live_mode)
+    {
+        // restore the latency time
+        setLatencyTime(m_saved_latency_time);
+
+        // restore the trigger mode
+        setTriggerMode(m_saved_trigger_mode);
+
+        // restore the number total of frames
+        setNbFrames(m_saved_nb_frames);
+
+        m_data_saved_for_live_mode = false;
+    }
 }
 
 //------------------------------------------------------------------
@@ -673,14 +760,26 @@ lima::SlsEiger::TriggerMode Detector::getTriggerMode(void)
  * \brief Gets the number of frames
  * \return number of frames
  *******************************************************************/
+// seems to be never called by Lima which manages its own frames number.   
 int64_t Detector::getNbFrames()
 {
-    DEB_MEMBER_FUNCT();
+    double result;
 
-    // updating the internal copies of trigger mode label, number of cyles, number of frames per cycle, number of frames
-    updateTriggerData();
+    // during the live mode, the previous frame nb value is returned.
+    // The data change must be invisible for the Tango client 
+    if(m_data_saved_for_live_mode)
+    {
+        result = m_saved_nb_frames;
+    }
+    else
+    {
+        // updating the internal copies of trigger mode label, number of cyles, number of frames per cycle, number of frames
+        updateTriggerData();
 
-    return m_nb_frames;
+        result =  m_nb_frames;
+    }
+
+    return result;
 }
 
 /*******************************************************************
@@ -698,8 +797,17 @@ uint64_t Detector::getInternalNbFrames()
 *******************************************************************/
 void Detector::setNbFrames(int64_t in_nb_frames)
 {
-    // updating the internal copies of trigger mode label, number of cyles, number of frames per cycle, number of frames
-    updateTriggerData();
+    if(in_nb_frames == 0LL)
+    {
+        // preparing the live mode
+        saveDataBeforeLiveMode();
+        changeDataBeforeLiveMode(in_nb_frames); // this call changes the in_nb_frames value
+    }
+    else
+    {
+        // updating the internal copies of trigger mode label, number of cyles, number of frames per cycle, number of frames
+        updateTriggerData();
+    }
 
     int64_t nb_frames_per_cycle;
     int64_t nb_cycles          ;
@@ -1026,6 +1134,7 @@ double Detector::getExpTime()
 {
     // updating the internal copies of exposure & latency times
     updateTimes();
+
     return m_exposure_time;
 }
 
@@ -1061,9 +1170,23 @@ void Detector::setExpTime(double in_exp_time)
  *******************************************************************/
 double Detector::getLatencyTime()
 {
-    // updating the internal copies of exposure & latency times
-    updateTimes();
-    return m_latency_time;
+    double result;
+
+    // during the live mode, the previous latency time value is returned.
+    // The data change must be invisible for the Tango client 
+    if(m_data_saved_for_live_mode)
+    {
+        result = m_saved_latency_time;
+    }
+    else
+    {
+        // updating the internal copies of exposure & latency times
+        updateTimes();
+
+        result = m_latency_time;
+    }
+
+    return result;
 }
 
 /*******************************************************************

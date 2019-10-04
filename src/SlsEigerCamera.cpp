@@ -53,24 +53,27 @@ using namespace lima::SlsEiger;
  * \param in_frame_packet_number_8 Number of packets we should get in each receiver frame for 8 bits mode
  * \param in_frame_packet_number_16 Number of packets we should get in each receiver frame for 16 bits mode
  * \param in_frame_packet_number_32 Number of packets we should get in each receiver frame for 32 bits mode
+ * \param in_live_mode_min_frame_period_sec Minimum period between frames for live mode
  ************************************************************************/
-Camera::Camera(const std::string & in_config_file_name      ,
-               const double        in_readout_time_sec      ,
-               const long          in_receiver_fifo_depth   ,
-               const int           in_bit_depth             ,
-               const long          in_frame_packet_number_8 ,
-               const long          in_frame_packet_number_16,
-               const long          in_frame_packet_number_32)
+Camera::Camera(const std::string & in_config_file_name              ,
+               const double        in_readout_time_sec              ,
+               const long          in_receiver_fifo_depth           ,
+               const int           in_bit_depth                     ,
+               const long          in_frame_packet_number_8         ,
+               const long          in_frame_packet_number_16        ,
+               const long          in_frame_packet_number_32        ,
+               const double        in_live_mode_min_frame_period_sec)
 {
     // creating the detector
-    m_detector = new Detector(this                     ,
-                              in_config_file_name      ,
-                              in_readout_time_sec      ,
-                              in_receiver_fifo_depth   ,
-                              in_bit_depth             ,
-                              in_frame_packet_number_8 ,
-                              in_frame_packet_number_16,
-                              in_frame_packet_number_32);
+    m_detector = new Detector(this                             ,
+                              in_config_file_name              ,
+                              in_readout_time_sec              ,
+                              in_receiver_fifo_depth           ,
+                              in_bit_depth                     ,
+                              in_frame_packet_number_8         ,
+                              in_frame_packet_number_16        ,
+                              in_frame_packet_number_32        ,
+                              in_live_mode_min_frame_period_sec);
 
     // creating the camera frame manager
     m_frames_manager = new CameraFrames(m_detector->getModulesNb() * 2, // 2 parts of images for each module
@@ -119,16 +122,6 @@ Camera::~Camera()
 void Camera::prepareAcq()
 {
     DEB_MEMBER_FUNCT();
-
-    // Only snap is allowed
-    {
-        int64_t nb_frames = getNbFrames();
-
-        if(nb_frames == 0LL)
-        {
-            THROW_HW_ERROR(ErrorType::Error) << "Start mode is not allowed for this device! Please use Snap mode.";
-        }
-    }
 
     // clear the frames containers
     m_frames_manager->clear();
@@ -302,6 +295,17 @@ void Camera::getNbFrames(size_t & out_received  ,
 {
     // reading in the number of frames in the frame manager
     m_frames_manager->getNbFrames(out_received, out_not_merged, out_treated);
+}
+
+//------------------------------------------------------------------
+// live mode methods
+//------------------------------------------------------------------
+/*******************************************************************
+ * \brief restore data which were saved before live mode
+*******************************************************************/
+void Camera::restoreDataAfterLiveMode(void)
+{
+    m_detector->restoreDataAfterLiveMode();
 }
 
 //==================================================================

@@ -162,6 +162,10 @@ void CameraThread::execStartAcq()
     if(!startAcquisition())
     {
         setStatus(CameraThread::Error);
+
+        // after a live mode, we need to restore the previous data : frames number, trigger mode, latency time
+        m_cam->restoreDataAfterLiveMode();
+
         return;
     }
 
@@ -220,6 +224,9 @@ void CameraThread::execStartAcq()
                 
                 m_frames_manager->getNbFrames(received, not_merged, treated );
 
+                // after a live mode, we need to restore the previous data : frames number, trigger mode, latency time
+                m_cam->restoreDataAfterLiveMode();
+
                 DEB_TRACE() << "frames received   (" << received   << ")";
                 DEB_TRACE() << "frames not merged (" << not_merged << ")";
                 DEB_TRACE() << "frames treated    (" << treated    << ")";
@@ -238,6 +245,9 @@ void CameraThread::execStartAcq()
         if(!stopAcquisition())
         {
             setStatus(CameraThread::Error);
+
+            // after a live mode, we need to restore the previous data : frames number, trigger mode, latency time
+            m_cam->restoreDataAfterLiveMode();
 
             std::string error_text = "Could not stop real time acquisition!";
             manageError(error_text);
@@ -262,6 +272,9 @@ void CameraThread::execStartAcq()
     if(getStatus() == CameraThread::Running)
     {
         setStatus(CameraThread::Idle);
+
+        // after a live mode, we need to restore the previous data : frames number, trigger mode, latency time
+        m_cam->restoreDataAfterLiveMode();
     }
 }
 

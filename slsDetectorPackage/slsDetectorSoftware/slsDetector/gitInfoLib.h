@@ -1,6 +1,6 @@
 #define GITURL "https://github.com/CedricCastel/Lima-camera-slseiger.git"
-#define GITREPUUID "db3f555db4c0839bfc0f4f2ce2ca69f41303392d"
+#define GITREPUUID "a595b73b320c1571cb1531a01da93a1bbff5b2ff"
 #define GITAUTH "CedricCastel_"
-#define GITREV 0x10
+#define GITREV 0x12
 #define GITDATE 0x20190528
 #define GITBRANCH "master"

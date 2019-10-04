@@ -79,6 +79,9 @@ namespace lima
         static const std::string SLS_TEMP_FPGA2   = "temp_fpgafl" ; 
         static const std::string SLS_TEMP_FPGA3   = "temp_fpgafr" ; 
 
+        // This is the nb frames value used for the live mode (start command)
+        static const int64_t SLS_NB_FRAMES_LIVE_MODE = 0x7FFFFFFF;
+
         // pre-defines the Camera class
         class Camera;
 
@@ -94,14 +97,15 @@ namespace lima
         public:
             //==================================================================
             // constructor
-            explicit Detector(Camera            * in_camera                ,
-                              const std::string & in_config_file_name      ,
-                              const double        in_readout_time_sec      ,
-                              const long          in_receiver_fifo_depth   ,
-                              const int           in_bit_depth             ,
-                              const long          in_frame_packet_number_8 ,
-                              const long          in_frame_packet_number_16,
-                              const long          in_frame_packet_number_32);
+            explicit Detector(Camera            * in_camera                        ,
+                              const std::string & in_config_file_name              ,
+                              const double        in_readout_time_sec              ,
+                              const long          in_receiver_fifo_depth           ,
+                              const int           in_bit_depth                     ,
+                              const long          in_frame_packet_number_8         ,
+                              const long          in_frame_packet_number_16        ,
+                              const long          in_frame_packet_number_32        ,
+                              const double        in_live_mode_min_frame_period_sec);
 
             // destructor (needs to be virtual)
             virtual ~Detector();
@@ -313,6 +317,12 @@ namespace lima
             // returns the current detector status
             lima::SlsEiger::Status getStatus();
 
+            //------------------------------------------------------------------
+            // live mode methods
+            //------------------------------------------------------------------
+            // restore data which were saved before live mode
+            void restoreDataAfterLiveMode(void);
+
         private:
             // creates an autolock mutex for sdk methods access
             lima::AutoMutex sdkLock() const;
@@ -339,6 +349,15 @@ namespace lima
 
             // inits the detector while setting the configuration file name
             void init(const std::string & in_config_file_name);
+
+            //------------------------------------------------------------------
+            // live mode methods
+            //------------------------------------------------------------------
+            // Save the data which will be changed during live mode
+            void saveDataBeforeLiveMode(void);
+
+            // Change some data before live mode
+            void changeDataBeforeLiveMode(int64_t & in_out_nb_frames);
 
         private:
             // Class for detector functionalities to embed the detector controls in the users custom interface e.g. EPICS, Lima etc.
@@ -373,6 +392,9 @@ namespace lima
 
             // Number of packets we should get in each receiver frame for 32 bits mode
             uint32_t m_frame_packet_number_32;
+
+            // live mode min frame period in seconds
+            double m_live_mode_min_frame_period_sec;
 
             //------------------------------------------------------------------
             // image management
@@ -465,6 +487,20 @@ namespace lima
             // temperatures of hardware elements
             std::vector<std::vector<int>> m_temperatures      ; // temperature for several modules
             std::vector<std::string>      m_temperature_labels;
+
+            //------------------------------------------------------------------
+            // used for live mode
+            //------------------------------------------------------------------
+            bool m_data_saved_for_live_mode;
+
+            // saved number total of frames before live mode
+            int64_t m_saved_nb_frames;
+
+            // saved trigger mode before live mode
+            lima::SlsEiger::TriggerMode m_saved_trigger_mode;
+
+            // saved latency time before live mode
+            double m_saved_latency_time;
 
             //------------------------------------------------------------------
             // mutex stuff

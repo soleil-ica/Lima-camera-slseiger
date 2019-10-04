@@ -1,9 +1,9 @@
 Path: slsDetectorsPackage/slsDetectorSoftware 
 URL: origin https://github.com/CedricCastel/Lima-camera-slseiger.git 
 Repository Root: origin https://github.com/CedricCastel/Lima-camera-slseiger.git 
-Repsitory UUID: db3f555db4c0839bfc0f4f2ce2ca69f41303392d 
-Revision: 2 
+Repsitory UUID: a595b73b320c1571cb1531a01da93a1bbff5b2ff 
+Revision: 3 
 Branch: master 
 Last Changed Author: CedricCastel_ 
-Last Changed Rev: 10 
+Last Changed Rev: 12 
 Last Changed Date: 2019-05-28 12:16:23.305876600 +0200 ./slsDetector/slsDetectorUsers.h

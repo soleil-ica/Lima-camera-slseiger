@@ -67,13 +67,14 @@ namespace lima
         public:
             //==================================================================
             // constructor
-            Camera(const std::string & in_config_file_name      ,  // complete path to the configuration file
-                   const double        in_readout_time_sec      ,  // readout time in seconds
-                   const long          in_receiver_fifo_depth   ,  // Number of frames in the receiver memory
-                   const int           in_bit_depth             ,  // bit depth (8, 16, 32)
-                   const long          in_frame_packet_number_8 ,  // Number of packets we should get in each receiver frame for 8 bits mode
-                   const long          in_frame_packet_number_16,  // Number of packets we should get in each receiver frame for 16 bits mode
-                   const long          in_frame_packet_number_32); // Number of packets we should get in each receiver frame for 32 bits mode
+            Camera(const std::string & in_config_file_name              ,  // complete path to the configuration file
+                   const double        in_readout_time_sec              ,  // readout time in seconds
+                   const long          in_receiver_fifo_depth           ,  // Number of frames in the receiver memory
+                   const int           in_bit_depth                     ,  // bit depth (8, 16, 32)
+                   const long          in_frame_packet_number_8         ,  // Number of packets we should get in each receiver frame for 8 bits mode
+                   const long          in_frame_packet_number_16        ,  // Number of packets we should get in each receiver frame for 16 bits mode
+                   const long          in_frame_packet_number_32        ,  // Number of packets we should get in each receiver frame for 32 bits mode
+                   const double        in_live_mode_min_frame_period_sec); // Minimum period between frames for live mode
 
             // destructor (no need to be virtual)
             ~Camera();
@@ -120,6 +121,12 @@ namespace lima
                 void getNbFrames(size_t & out_received  , 
                                  size_t & out_not_merged,
                                  size_t & out_treated   ) const;
+
+                //------------------------------------------------------------------
+                // live mode methods
+                //------------------------------------------------------------------
+                // restore data which were saved before live mode
+                void restoreDataAfterLiveMode(void);
 
             //==================================================================
             // Related to HwDetInfoCtrlObj
