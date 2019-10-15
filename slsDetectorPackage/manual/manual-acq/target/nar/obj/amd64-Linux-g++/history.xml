@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<history>
+   <processor signature="g++ 4.4.7 x86_64-redhat-linux-w -Wall -W -pipe -fno-enforce-eh-specs -std=c++0x -D_USING_TANGO_8_OR_ABOVE_ -gstabs+ -c -O2 -DSLSEIGER_TANGO_INDEPENDANT -DLinux -DGNU_GCC -D_REENTRANT -DENABLE_CRASH_REPORT -I../../../../../../../../../root/.m2/repository/fr/soleil/lib/LimaCore-amd64-Linux-gcc-shared-release/1.7.7/nar/include -I../../../../../../../../../root/.m2/repository/fr/soleil/lib/LimaProcesslib-amd64-Linux-gcc-shared-release/1.3.8/nar/include -Iframes -I../../slsDetectorSoftware/commonFiles -I../../slsDetectorSoftware/multiSlsDetector -I../../slsDetectorSoftware/slsDetector -I../../slsDetectorSoftware/slsDetectorAnalysis -I../../slsDetectorSoftware/slsReceiverInterface -I../../slsDetectorSoftware/threadFiles -I../../slsReceiverSoftware/include">
+      <target file="SlsEigerCameraThread.o" lastModified="169fd57ab58">
+         <source file="../../../../frames/SlsEigerCameraThread.cpp" lastModified="169e20b20f0"/>
+      </target>
+      <target file="SlsEigerMain.o" lastModified="169fd57b328">
+         <source file="../../../../frames/SlsEigerMain.cpp" lastModified="169fc65e4d0"/>
+      </target>
+      <target file="SlsEigerCameraThreadLima.o" lastModified="169fd57a388">
+         <source file="../../../../frames/SlsEigerCameraThreadLima.cpp" lastModified="169fd171430"/>
+      </target>
+      <target file="SlsEigerCameraFramePart.o" lastModified="169fd579fa0">
+         <source file="../../../../frames/SlsEigerCameraFramePart.cpp" lastModified="169b9562b50"/>
+      </target>
+      <target file="StreamNexus.o" lastModified="169fd57b710">
+         <source file="../../../../frames/StreamNexus.cpp" lastModified="169c8cc0258"/>
+      </target>
+      <target file="SlsEigerCameraFrames.o" lastModified="169fd57c2c8">
+         <source file="../../../../frames/SlsEigerCameraFrames.cpp" lastModified="169fd571ad0"/>
+      </target>
+      <target file="SlsEigerCameraThreadTest.o" lastModified="169fd57baf8">
+         <source file="../../../../frames/SlsEigerCameraThreadTest.cpp" lastModified="169fd06cc38"/>
+      </target>
+      <target file="SlsEigerCameraFrame.o" lastModified="169fd57a770">
+         <source file="../../../../frames/SlsEigerCameraFrame.cpp" lastModified="169fd0322b8"/>
+      </target>
+   </processor>
+</history>

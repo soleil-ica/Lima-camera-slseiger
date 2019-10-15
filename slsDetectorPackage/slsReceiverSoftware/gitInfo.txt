@@ -1,0 +1,9 @@
+Path: slsDetectorsPackage/slsReceiverSoftware 
+URL: origin git@github.com:CedricCastel/Lima-camera-slsjungfrau.git soleil-ica git@github.com:soleil-ica/Lima-camera-slsjungfrau.git 
+Repository Root: origin git@github.com:CedricCastel/Lima-camera-slsjungfrau.git soleil-ica git@github.com:soleil-ica/Lima-camera-slsjungfrau.git 
+Repsitory UUID: 8ddd3efb8a87d71c9103f4c6ce2576cab4289b7f 
+Revision: 0 
+Branch: sdk-4-0-0-update 
+Last Changed Author: Arafat_Noureddine 
+Last Changed Rev: 28 
+Last Changed Date: 2019-03-07 12:02:58.956055800 +0100 ./Makefile

@@ -1,0 +1,65 @@
+@startuml
+
+title <b>SlsEiger - Sequence Diagram  - Acquisition - Storing frames - 19/06/2019</b>\n
+
+skinparam classFontSize 13
+ 
+'boundary SlsEiger
+
+entity CameraThread
+entity Camera
+entity Detector
+entity CameraFrames
+database CameraFrame
+database CameraFramePart
+entity StdBufferCbMgr
+
+database m_not_merged_frames
+database m_treated_frames
+
+== ==
+|||
+
+group treating not merged frames
+  CameraThread -> CameraThread : treatNotMergedFrames
+  
+  CameraThread -> CameraFrames : getFirstNotMerged() 
+    CameraFrames --> CameraThread : not merged frame
+
+  loop (not_merged_frame != NULL)
+    
+    group getting image buffer from Lima
+      CameraThread -> CameraThread : getImageBuffer(not merged frame)
+      CameraThread -> Camera : getStdBufferCbMgr()
+        Camera --> CameraThread : buffer mgr
+      CameraThread -> CameraFrame : not merged frame->getIndex()
+      CameraFrame --> CameraThread : frame index
+      CameraThread -> StdBufferCbMgr : buffer mgr.getFrameBufferPtr(frame index)
+        StdBufferCbMgr --> CameraThread : image buffer
+    end
+
+    CameraThread -> CameraFrames : buildImage(not merged frame, image buffer)
+    CameraFrames -> CameraFrame : getParts()
+
+    group managing image buffer ready
+      CameraThread -> CameraThread : TreatImageBufferReady(not merged frame)
+      CameraThread -> CameraFrame : getIndex()
+      CameraThread -> CameraFrame : getTimestamp()
+      CameraThread -> Camera : getStdBufferCbMgr()
+        Camera --> CameraThread : buffer mgr
+      CameraThread -> StdBufferCbMgr : buffer mgr.newFrameReady()
+    end
+  
+    CameraThread -> CameraFrames : moveFirstNotMergedToTreated
+      CameraFrames -> m_not_merged_frames : front()
+        m_not_merged_frames --> CameraFrames : frame
+      CameraFrames -> m_not_merged_frames : pop_front()
+      CameraFrames -> m_treated_frames : push_back(frame)
+
+    CameraThread -> CameraFrames : getFirstNotMerged() 
+      CameraFrames --> CameraThread : not merged frame
+  end
+end
+|||
+
+@enduml
