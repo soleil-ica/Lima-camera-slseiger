@@ -38,6 +38,7 @@
 #include "lima/ThreadUtils.h"
 #include "lima/HwSyncCtrlObj.h"
 #include "lima/HwEventCtrlObj.h"
+#include "lima/HwMaxImageSizeCallback.h"
 #include "SlsEigerTypes.h"
 
 /**********************************************************************/
@@ -328,6 +329,15 @@ namespace lima
                 // for a specific module
                 int getTemperature(lima::SlsEiger::Temperature in_temperature_type, int in_module_index);
 
+                //------------------------------------------------------------------
+                // gap pixels management
+                //------------------------------------------------------------------
+                // get the gap pixels management activation state
+                bool getEnableGapPixels() const;
+
+                // set the gap pixels management activation state
+                void setEnableGapPixels(bool in_enable_gap_pixels);
+
             //==================================================================
             // Related to event control object
             //==================================================================
@@ -384,6 +394,9 @@ namespace lima
             // frames manager
             //------------------------------------------------------------------
             CameraFrames * m_frames_manager;
+
+            // for the dynamic change of size during the management of gap pixels
+            #include "SlsEigerImageSize.h"
         };
     }
 }

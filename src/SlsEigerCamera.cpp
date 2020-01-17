@@ -297,6 +297,32 @@ void Camera::getNbFrames(size_t & out_received  ,
     m_frames_manager->getNbFrames(out_received, out_not_merged, out_treated);
 }
 
+/************************************************************************
+ * \brief get the gap pixels management activation state
+ * \return is the gap pixels management activated ?
+ ************************************************************************/
+bool Camera::getEnableGapPixels() const
+{
+    return m_frames_manager->getEnableGapPixels();
+}
+
+/************************************************************************
+ * \brief set the gap pixels management activation state
+ * \param in_enable_gap_pixels is the gap pixels management should be activated ?
+ ************************************************************************/
+void Camera::setEnableGapPixels(bool in_enable_gap_pixels)
+{
+    bool previous_value = getEnableGapPixels();
+    m_frames_manager->setEnableGapPixels(in_enable_gap_pixels);
+    
+    // when the type of gap pixels management changes, 
+    // we need to update the size of the images
+    if(previous_value != getEnableGapPixels())
+    {
+        updateImageFormat();
+    }
+}
+
 //------------------------------------------------------------------
 // live mode methods
 //------------------------------------------------------------------
@@ -320,7 +346,7 @@ void Camera::restoreDataAfterLiveMode(void)
  *******************************************************************/
 unsigned short Camera::getMaxWidth() const
 {
-    return static_cast<unsigned short>(m_detector->getMaxWidth());
+    return getWidth();
 }
 
 /*******************************************************************
@@ -329,7 +355,7 @@ unsigned short Camera::getMaxWidth() const
  *******************************************************************/
 unsigned short Camera::getMaxHeight() const
 {
-    return static_cast<unsigned short>(m_detector->getMaxHeight());
+    return getHeight();
 }
 
 /*******************************************************************
@@ -338,7 +364,7 @@ unsigned short Camera::getMaxHeight() const
  *******************************************************************/
 unsigned short Camera::getWidth() const
 {
-    return static_cast<unsigned short>(m_detector->getWidth());
+    return m_frames_manager->getWidth();
 }
 
 /*******************************************************************
@@ -347,7 +373,7 @@ unsigned short Camera::getWidth() const
  *******************************************************************/
 unsigned short Camera::getHeight() const
 {
-    return static_cast<unsigned short>(m_detector->getHeight());
+    return m_frames_manager->getHeight();
 }
 
 //------------------------------------------------------------------

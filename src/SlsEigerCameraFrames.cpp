@@ -41,6 +41,11 @@ using namespace lima::SlsEiger;
 // define it if you want to trace more informations about the acquisition
 //#define SLS_EIGER_CAMERA_FRAMES_LOG_VERBOSE
 
+// define it if you want to check the positions of the gap pixel filling
+// It will filled the gap with a constant value
+#define SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
+#define SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE (-1)
+
 /************************************************************************
  * \brief constructor
  * \param in_complete_frame_parts_number number of frame parts to build a complete frame
@@ -68,6 +73,24 @@ CameraFrames::CameraFrames(int         in_complete_frame_parts_number,
     m_frame_size_y                = in_frame_size_y               ;
     m_frame_part_size_x           = in_frame_part_size_x          ;
     m_frame_part_size_y           = in_frame_part_size_y          ;
+
+    m_chip_size_x                 = 256  ;
+    m_chip_size_y                 = 256  ;
+    m_enable_gap_pixels           = false;
+
+    // compute the frame size with filled gap pixels
+    int chips_nb_by_line = m_frame_size_x / m_chip_size_x;    
+    int chips_lines_nb   = m_frame_size_y / m_chip_size_y;
+
+    m_gap_frame_size_x = chips_nb_by_line * (m_chip_size_x + 2);
+    m_gap_frame_size_y = chips_lines_nb   * (m_chip_size_y + 2);
+
+    // compute the frame part size with filled gap pixels
+    chips_nb_by_line = m_frame_part_size_x / m_chip_size_x;    
+    chips_lines_nb   = m_frame_part_size_y / m_chip_size_y;
+
+    m_gap_frame_part_size_x = chips_nb_by_line * (m_chip_size_x + 2);
+    m_gap_frame_part_size_y = chips_lines_nb   * (m_chip_size_y + 2);
 
     m_first_timestamp         = 0LL  ;
     m_is_first_frame_received = false;
@@ -132,6 +155,42 @@ std::size_t CameraFrames::getFramePartSizex()
 std::size_t CameraFrames::getFramePartSizey()
 {
     return m_frame_part_size_y;
+}
+
+/************************************************************************
+ * \brief get the gap pixels management activation state
+ * \return is the gap pixels management activated ?
+ ************************************************************************/
+bool CameraFrames::getEnableGapPixels() const
+{
+    return m_enable_gap_pixels;
+}
+
+/************************************************************************
+ * \brief set the gap pixels management activation state
+ * \param in_enable_gap_pixels is the gap pixels management should be activated ?
+ ************************************************************************/
+void CameraFrames::setEnableGapPixels(bool in_enable_gap_pixels)
+{
+    m_enable_gap_pixels = in_enable_gap_pixels;
+}
+
+/*******************************************************************
+ * \brief Gets the image width
+ * \return image width
+ *******************************************************************/
+unsigned short CameraFrames::getWidth() const
+{
+    return static_cast<unsigned short>(m_enable_gap_pixels ? m_gap_frame_size_x : m_frame_size_x);
+}
+
+/*******************************************************************
+ * \brief Gets the image height
+ * \return image height
+ *******************************************************************/
+unsigned short CameraFrames::getHeight() const
+{
+    return static_cast<unsigned short>(m_enable_gap_pixels ? m_gap_frame_size_y : m_frame_size_y);
 }
 
 /************************************************************************
@@ -314,6 +373,15 @@ bool CameraFrames::buildImage(yat::SharedPtr<CameraFrame>  in_frame             
     // checking the dest buffer size
     std::size_t theorical_size = m_frame_size_x * m_frame_size_y * m_color_depth_bytes_nb;
 
+    if(m_enable_gap_pixels)
+    {
+        theorical_size = m_gap_frame_size_x * m_gap_frame_size_y * m_color_depth_bytes_nb;
+    }
+    else
+    {
+        theorical_size = m_frame_size_x * m_frame_size_y * m_color_depth_bytes_nb;
+    }
+
     if(in_image_buffer_byte_size != theorical_size)
     {
         DEB_TRACE() << "Incoherent size of destination buffer [ " 
@@ -334,7 +402,7 @@ bool CameraFrames::buildImage(yat::SharedPtr<CameraFrame>  in_frame             
     }
 
     // checking the frame part size x is a multiple of 8
-    if(m_frame_part_size_x % 8)
+    if((!m_enable_gap_pixels) && (m_frame_part_size_x % 8))
     {
         DEB_TRACE() << "Incoherent frame part size [ " 
                     << m_frame_part_size_x << "] should be a multiple of 8!"; 
@@ -342,53 +410,55 @@ bool CameraFrames::buildImage(yat::SharedPtr<CameraFrame>  in_frame             
     }
 #endif
 
-    std::size_t frame_size_x_64      = (m_frame_size_x      * m_color_depth_bytes_nb) / 8; 
-    std::size_t frame_part_size_x_64 = (m_frame_part_size_x * m_color_depth_bytes_nb) / 8; 
-
-    // making a copy for each frame part
-    for( FramePartsContainer::iterator it = parts.begin(); it != parts.end(); it++ )    
+    if(!m_enable_gap_pixels)
     {
-        yat::SharedPtr<CameraFramePart> part = *it;
+        std::size_t frame_size_x_64      = (m_frame_size_x      * m_color_depth_bytes_nb) / 8; 
+        std::size_t frame_part_size_x_64 = (m_frame_part_size_x * m_color_depth_bytes_nb) / 8; 
 
-        bool vertical_flip = (part->getPosy() == 0); // the top part must be vertical flipped
-
-        // compute the top-left corner of the destination buffer 
-        uint64_t * destination_buffer = reinterpret_cast<uint64_t *>(in_image_buffer) + 
-                                        (part->getPosx() * frame_part_size_x_64) +
-                                        (part->getPosy() * frame_size_x_64 * m_frame_part_size_y);
-
-        // if vertical flip, we start writing in the last line of the frame part
-        if(vertical_flip)
+        // making a copy for each frame part
+        for( FramePartsContainer::iterator it = parts.begin(); it != parts.end(); it++ )    
         {
-            destination_buffer += (frame_size_x_64 * (m_frame_part_size_y - 1));
-        }
+            yat::SharedPtr<CameraFramePart> part = *it;
 
-        // We will read the frame part in a sequential way.
-        // We will write in the destination buffer making a jump at the end of each line.
-        // If there is no vertical flip, we will jump to the start of the next line, adding the size x of a frame part.
-        // If there is a vertical flip, we will jump back to the start of the previous line, substracting 3 * the size x of a frame part.
-        const uint64_t * source_buffer = reinterpret_cast<const uint64_t *>(part->getDataPointer());
-        int              nb_lines      = m_frame_part_size_y;
-        int              nb_pixels_by_line;
-        int              nb_pixels_to_jump = (vertical_flip) ? -(frame_part_size_x_64 * 3) : frame_part_size_x_64;
+            bool vertical_flip = (part->getPosy() == 0); // the top part must be vertical flipped
 
-        // copy all the lines
-        do
-        {
-            nb_pixels_by_line = frame_part_size_x_64;
+            // compute the top-left corner of the destination buffer 
+            uint64_t * destination_buffer = reinterpret_cast<uint64_t *>(in_image_buffer) + 
+                                            (part->getPosx() * frame_part_size_x_64) +
+                                            (part->getPosy() * frame_size_x_64 * m_frame_part_size_y);
 
-            // copy the line
+            // if vertical flip, we start writing in the last line of the frame part
+            if(vertical_flip)
+            {
+                destination_buffer += (frame_size_x_64 * (m_frame_part_size_y - 1));
+            }
+
+            // We will read the frame part in a sequential way.
+            // We will write in the destination buffer making a jump at the end of each line.
+            // If there is no vertical flip, we will jump to the start of the next line, adding the size x of a frame part.
+            // If there is a vertical flip, we will jump back to the start of the previous line, substracting 3 * the size x of a frame part.
+            const uint64_t * source_buffer = reinterpret_cast<const uint64_t *>(part->getDataPointer());
+            int              nb_lines      = m_frame_part_size_y;
+            int              nb_pixels_by_line;
+            int              nb_pixels_to_jump = (vertical_flip) ? -(frame_part_size_x_64 * 3) : frame_part_size_x_64;
+
+            // copy all the lines
             do
             {
-                *destination_buffer++ = *source_buffer++;
+                nb_pixels_by_line = frame_part_size_x_64;
+
+                // copy the line
+                do
+                {
+                    *destination_buffer++ = *source_buffer++;
+                }
+                while(--nb_pixels_by_line);
+
+                // jump to the next start of line (next or previous)
+                destination_buffer += nb_pixels_to_jump; 
             }
-            while(--nb_pixels_by_line);
-
-            // jump to the next start of line (next or previous)
-            destination_buffer += nb_pixels_to_jump; 
+            while(--nb_lines);
         }
-        while(--nb_lines);
-
 
 /*        {
             const uint16_t * s = reinterpret_cast<const uint16_t *>(in_image_buffer);
@@ -400,12 +470,247 @@ bool CameraFrames::buildImage(yat::SharedPtr<CameraFrame>  in_frame             
             }
         }*/
     }
+    else
+    {
+        std::size_t frame_size_x_8      = m_gap_frame_size_x      * m_color_depth_bytes_nb;
+        std::size_t frame_part_size_x_8 = m_gap_frame_part_size_x * m_color_depth_bytes_nb; 
+        std::size_t chip_size_x_8       = (m_chip_size_x + 2)     * m_color_depth_bytes_nb;
 
+        // making a copy for each frame part
+        for( FramePartsContainer::iterator it = parts.begin(); it != parts.end(); it++ )    
+        {
+            yat::SharedPtr<CameraFramePart> part = *it;
+
+            bool vertical_flip = (part->getPosy() == 0); // the top part must be vertical flipped
+
+            // compute the top-left corner of the destination buffer 
+            uint8_t * destination_buffer = reinterpret_cast<uint8_t *>(in_image_buffer) + 
+                                           (part->getPosx() * frame_part_size_x_8) +
+                                           (part->getPosy() * frame_size_x_8 * m_gap_frame_part_size_y);
+
+            const uint8_t * source_buffer = reinterpret_cast<const uint8_t *>(part->getDataPointer());
+
+            if(m_color_depth_bytes_nb == 1) // 8 bits
+            {
+                copyGapFramePart<uint8_t>(source_buffer, destination_buffer, vertical_flip);
+                FillGapOfChip<uint8_t>(destination_buffer); 
+                FillGapOfChip<uint8_t>(destination_buffer + chip_size_x_8);
+            }
+            else
+            if(m_color_depth_bytes_nb == 2) // 16 bits
+            {
+                copyGapFramePart<uint16_t>(source_buffer, destination_buffer, vertical_flip);
+                FillGapOfChip<uint16_t>(destination_buffer); 
+                FillGapOfChip<uint16_t>(destination_buffer + chip_size_x_8);
+            }
+            else
+            if(m_color_depth_bytes_nb == 4) // 32 bits
+            {
+                copyGapFramePart<uint32_t>(source_buffer, destination_buffer, vertical_flip);
+                FillGapOfChip<uint32_t>(destination_buffer); 
+                FillGapOfChip<uint32_t>(destination_buffer + chip_size_x_8);
+            }
+        }
+    }
 
     // clear the parts when they are no more needed to free the memory
     in_frame->clearParts();
 
-    return false;
+    return true;
+}
+
+/************************************************************************
+ * \brief copy a part of the image with gap pixels not filled
+ * \param in_source_buffer source buffer which contains the frame part
+ * \param in_destination_buffer destination buffer (top left corner)
+ * \param in_vertical_flip vertical flip activation value
+ ************************************************************************/
+template<typename T> void CameraFrames::copyGapFramePart(const uint8_t * in_source_buffer     ,
+                                                         uint8_t *       in_destination_buffer,
+                                                         bool            in_vertical_flip     )
+{
+    // We will read the frame part in a sequential way.
+    // We will write in the destination buffer making a jump at the end of each line.
+    // If there is no vertical flip, we will jump to the start of the next line, adding the size x of a frame part.
+    // If there is a vertical flip, we will jump back to the start of the previous line, substracting 3 * the size x of a frame part.
+    int nb_lines           = m_frame_part_size_y;
+    int nb_pixels_to_jump  = (in_vertical_flip) ? -(static_cast<int>(m_gap_frame_part_size_x) * 3) : m_gap_frame_part_size_x;
+    int nb_pixels_by_line  ;
+
+    const T * source_buffer      = reinterpret_cast<const T *>(in_source_buffer);
+    T *       destination_buffer = reinterpret_cast<T *>(in_destination_buffer);
+
+    // jump the up border
+    destination_buffer += m_gap_frame_size_x;
+
+    // jump to the last line if vertical flip
+    if(in_vertical_flip)
+    {
+        destination_buffer += (m_gap_frame_size_x * (m_frame_part_size_y - 1));
+    }
+
+    // copy all the lines
+    do
+    {
+        // jump the left border
+        destination_buffer++;
+
+        nb_pixels_by_line = m_chip_size_x;
+
+        // copy the first chip line
+        do
+        {
+            *destination_buffer++ = *source_buffer++;
+        }
+        while(--nb_pixels_by_line);
+
+        // jump the border between the two chips
+        destination_buffer += 2;
+
+        nb_pixels_by_line = m_chip_size_x;
+
+        // copy the second chip line
+        do
+        {
+            *destination_buffer++ = *source_buffer++;
+        }
+        while(--nb_pixels_by_line);
+
+        // jump the right border
+        destination_buffer++;
+
+        // jump to the next start of line (next or previous)
+        destination_buffer += nb_pixels_to_jump; 
+    }
+    while(--nb_lines);
+}
+
+/************************************************************************
+ * \brief Fill the gap pixels for the image of a chip
+ * \param in_destination_buffer destination buffer (top left corner of chip image)
+ ************************************************************************/
+template<typename T> void CameraFrames::FillGapOfChip(uint8_t * in_destination_buffer)
+{
+    T * destination_buffer = reinterpret_cast<T *>(in_destination_buffer);
+    T   value;
+    int nb_pixels_by_line;
+    int nb_lines;
+    
+    // up-left corner
+#ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
+    value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
+#else
+    value = (*(destination_buffer + m_gap_frame_size_x + 1)) >> 2; // div by 4
+#endif
+
+    *(destination_buffer + m_gap_frame_size_x) = value;
+    *destination_buffer++ = value;
+    *(destination_buffer + m_gap_frame_size_x) = value;
+    *destination_buffer++ = value;
+
+    // up border
+    nb_pixels_by_line = m_chip_size_x - 2; // removing the corners
+
+    do
+    {
+    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
+        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
+    #else
+        value = (*(destination_buffer + m_gap_frame_size_x)) >> 1; // div by 2
+    #endif
+
+        *(destination_buffer + m_gap_frame_size_x) = value;
+        *destination_buffer++ = value;
+    }
+    while(--nb_pixels_by_line);
+
+    // up-right corner
+    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
+        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
+    #else
+        value = (*(destination_buffer + m_gap_frame_size_x)) >> 2; // div by 4
+    #endif
+
+    *(destination_buffer + m_gap_frame_size_x) = value;
+    *destination_buffer++ = value;
+    *(destination_buffer + m_gap_frame_size_x) = value;
+    *destination_buffer++ = value;
+
+    // we jump the first line of the chip image
+    destination_buffer += ((2 * m_gap_frame_size_x) - (m_chip_size_x + 2));
+
+    // copy all the lines
+    nb_lines = m_chip_size_y - 2;  // removing the corners
+
+    do
+    {
+        // left border of the line
+    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
+        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
+    #else
+        value = (*(destination_buffer + 1)) >> 1; // div by 2
+    #endif
+
+        *destination_buffer++ = value;
+        *destination_buffer++ = value;
+
+        // jumping to the right border of the line
+        destination_buffer += (m_chip_size_x - 2);
+
+        // right border of the line
+    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
+        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
+    #else
+        value = (*destination_buffer) >> 1; // div by 2
+    #endif
+
+        *destination_buffer++ = value;
+        *destination_buffer++ = value;
+
+        // we jump to the start of the next line
+        destination_buffer += (m_gap_frame_size_x - (m_chip_size_x + 2));
+    }
+    while(--nb_lines);
+
+    // down-left corner
+    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
+        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
+    #else
+        value = (*(destination_buffer + 1)) >> 2; // div by 4
+    #endif
+
+    *(destination_buffer + m_gap_frame_size_x) = value;
+    *destination_buffer++ = value;
+    *(destination_buffer + m_gap_frame_size_x) = value;
+    *destination_buffer++ = value;
+
+    // down border
+    nb_pixels_by_line = m_chip_size_x - 2; // removing the corners
+
+    do
+    {
+    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
+        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
+    #else
+        value = (*destination_buffer) >> 1; // div by 2
+    #endif
+
+        *(destination_buffer + m_gap_frame_size_x) = value;
+        *destination_buffer++ = value;
+    }
+    while(--nb_pixels_by_line);
+
+    // down-right corner
+    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
+        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
+    #else
+        value = (*destination_buffer) >> 2; // div by 4
+    #endif
+
+    *(destination_buffer + m_gap_frame_size_x) = value;
+    *destination_buffer++ = value;
+    *(destination_buffer + m_gap_frame_size_x) = value;
+    *destination_buffer++ = value;
 }
 
 /************************************************************************

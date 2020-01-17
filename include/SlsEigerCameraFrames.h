@@ -83,6 +83,18 @@ namespace lima
             // get the number of vertical pixels for a frame part
             std::size_t getFramePartSizey();
 
+            // get the gap pixels management activation state
+            bool getEnableGapPixels() const;
+
+            // set the gap pixels management activation state
+            void setEnableGapPixels(bool in_enable_gap_pixels);
+
+            // Gets the image width
+            unsigned short getWidth() const;
+
+            // Gets the image height
+            unsigned short getHeight() const;
+
             // clear the containers
             void clear();
 
@@ -120,9 +132,17 @@ namespace lima
             // creates an autolock mutex for containers methods access
             lima::AutoMutex containersLock() const;
 
+            // copy a part of the image with gap pixels not filled
+            template<typename T> void copyGapFramePart(const uint8_t * in_source_buffer     ,
+                                                       uint8_t *       in_destination_buffer,
+                                                       bool            in_vertical_flip     );
+
+            // Fill the gap pixels for the image of a chip
+            template<typename T> void FillGapOfChip(uint8_t * in_destination_buffer);
+
         private:
             //==================================================================
-            // important : a frame should always be in one of these tree containers.
+            // important : a frame should always be in one of these three containers.
             // container which contains the frames not complete
             FramesMapContainer   m_received_frames;
 
@@ -144,6 +164,14 @@ namespace lima
             std::size_t m_frame_size_y               ; // number of vertical pixels for a complete frame
             std::size_t m_frame_part_size_x          ; // number of horizontal pixels for a frame part
             std::size_t m_frame_part_size_y          ; // number of vertical pixels for a frame part
+            std::size_t m_chip_size_x                ; // number of horizontal pixels for a chip
+            std::size_t m_chip_size_y                ; // number of vertical pixels for a chip
+
+            bool        m_enable_gap_pixels    ; // is the gap pixels management activated ?
+            std::size_t m_gap_frame_size_x     ; // number of horizontal pixels for a complete frame with filled gap pixels
+            std::size_t m_gap_frame_size_y     ; // number of vertical pixels   for a complete frame with filled gap pixels
+            std::size_t m_gap_frame_part_size_x; // number of horizontal pixels for a frame part with filled gap pixels
+            std::size_t m_gap_frame_part_size_y; // number of vertical pixels   for a frame part with filled gap pixels
 
             //==================================================================
             // used to protect the containers access
