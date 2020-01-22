@@ -63,7 +63,6 @@ CameraThread::~CameraThread()
 {
     DEB_MEMBER_FUNCT();
     DEB_TRACE() << "CameraThread::~CameraThread";
-    abort();
 }
 
 /************************************************************************
@@ -95,7 +94,9 @@ void CameraThread::init()
 void CameraThread::abort()
 {
 	DEB_MEMBER_FUNCT();
+DEB_TRACE() << "CameraThread::ABORT (1)";
     CmdThread::abort();
+DEB_TRACE() << "CameraThread::ABORT (2)";
 	DEB_TRACE() << "DONE";
 }
 
@@ -235,6 +236,7 @@ void CameraThread::execStartAcq()
                 temp_stream << "Lost " << lost_frames_nb << " frames during real time acquisition!";
                 std::string error_text = temp_stream.str();
                 manageError(error_text);
+                return;
             }
         }
     }
@@ -251,6 +253,7 @@ void CameraThread::execStartAcq()
 
             std::string error_text = "Could not stop real time acquisition!";
             manageError(error_text);
+            return;
         }
     }
 

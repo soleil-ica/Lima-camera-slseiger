@@ -135,10 +135,18 @@ namespace lima
             // copy a part of the image with gap pixels not filled
             template<typename T> void copyGapFramePart(const uint8_t * in_source_buffer     ,
                                                        uint8_t *       in_destination_buffer,
-                                                       bool            in_vertical_flip     );
+                                                       int             in_x                 ,
+                                                       int             in_y                 );
+
+            // fill a part of the image with gap pixels
+            template<typename T> bool fillPart(uint8_t * in_destination_buffer, int x, int y);
 
             // Fill the gap pixels for the image of a chip
-            template<typename T> void FillGapOfChip(uint8_t * in_destination_buffer);
+            template<typename T> void FillGapOfChip(uint8_t * in_destination_buffer,
+                                                    bool      in_top_border        ,
+                                                    bool      in_left_border       ,
+                                                    bool      in_right_border      ,
+                                                    bool      in_bottom_border     );
 
         private:
             //==================================================================
