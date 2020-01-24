@@ -215,6 +215,10 @@ void Detector::init(const std::string & in_config_file_name)
 
     if(result == slsDetectorDefs::FAIL)
     {
+        // cleaning the shared memory because sometimes it can be corrupted
+        // It could help when the device will be restarted.
+        cleanSharedMemory();
+
         THROW_HW_FATAL(ErrorType::Error) << "readConfigurationFile failed! Could not initialize the camera!";
     }
 

@@ -94,10 +94,7 @@ void CameraThread::init()
 void CameraThread::abort()
 {
 	DEB_MEMBER_FUNCT();
-DEB_TRACE() << "CameraThread::ABORT (1)";
     CmdThread::abort();
-DEB_TRACE() << "CameraThread::ABORT (2)";
-	DEB_TRACE() << "DONE";
 }
 
 /************************************************************************
@@ -137,10 +134,13 @@ void CameraThread::execStopAcq()
 {
     DEB_MEMBER_FUNCT();
 
-    int status = getStatus();
-
-    if (status == CameraThread::Running)
+    if(getStatus() == CameraThread::Running)
+    {
         m_force_stop = true;
+
+        // Waiting for thread to finish or to be in error
+        waitNotStatus(CameraThread::Running);
+    }
 }
 
 /************************************************************************
@@ -233,7 +233,7 @@ void CameraThread::execStartAcq()
                 DEB_TRACE() << "frames treated    (" << treated    << ")";
 
                 std::stringstream temp_stream;
-                temp_stream << "Lost " << lost_frames_nb << " frames during real time acquisition!";
+                temp_stream << "Lost " << lost_frames_nb << " frame(s) during real time acquisition!";
                 std::string error_text = temp_stream.str();
                 manageError(error_text);
                 return;
