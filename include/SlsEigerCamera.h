@@ -38,6 +38,7 @@
 #include "lima/ThreadUtils.h"
 #include "lima/HwSyncCtrlObj.h"
 #include "lima/HwEventCtrlObj.h"
+#include "lima/HwMaxImageSizeCallback.h"
 #include "SlsEigerTypes.h"
 
 /**********************************************************************/
@@ -328,6 +329,15 @@ namespace lima
                 // for a specific module
                 int getTemperature(lima::SlsEiger::Temperature in_temperature_type, int in_module_index);
 
+                //------------------------------------------------------------------
+                // gap pixels management
+                //------------------------------------------------------------------
+                // get the gap pixels management activation state
+                bool getEnableGapPixels() const;
+
+                // set the gap pixels management activation state
+                void setEnableGapPixels(bool in_enable_gap_pixels);
+
             //==================================================================
             // Related to event control object
             //==================================================================
@@ -359,6 +369,10 @@ namespace lima
                 // stop detector real time acquisition
                 bool stopAcquisition();
 
+                // stops the acquisition and abort or restart the acq thread if it is in error
+                // can also abort the thread when we exit the program.
+                void applyStopAcq(bool in_restart, bool in_always_abort);
+
         private:
             friend class CameraThread; // for getFrameManager(), getInternalNbFrames() and m_buffer_ctrl_obj accesses
 
@@ -384,6 +398,9 @@ namespace lima
             // frames manager
             //------------------------------------------------------------------
             CameraFrames * m_frames_manager;
+
+            // for the dynamic change of size during the management of gap pixels
+            #include "SlsEigerImageSize.h"
         };
     }
 }

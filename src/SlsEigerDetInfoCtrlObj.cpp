@@ -156,7 +156,8 @@ void DetInfoCtrlObj::getDetectorModel(std::string & model)
  *******************************************************************/
 void DetInfoCtrlObj::registerMaxImageSizeCallback(HwMaxImageSizeCallback & cb)
 {
-    //m_mis_cb_gen.registerMaxImageSizeCallback(cb);
+    DEB_MEMBER_FUNCT();
+    m_cam.registerMaxImageSizeCallback(cb);
 }
 
 /*******************************************************************
@@ -164,7 +165,8 @@ void DetInfoCtrlObj::registerMaxImageSizeCallback(HwMaxImageSizeCallback & cb)
  *******************************************************************/
 void DetInfoCtrlObj::unregisterMaxImageSizeCallback(HwMaxImageSizeCallback & cb)
 {
-    //m_mis_cb_gen.unregisterMaxImageSizeCallback(cb);
+    DEB_MEMBER_FUNCT();
+    m_cam.unregisterMaxImageSizeCallback(cb);
 }
 
 /*************************************************************************/

@@ -97,8 +97,8 @@ Camera::~Camera()
 {
     DEB_DESTRUCTOR();
 
-    // stopping the acquisition
-    stopAcq();
+    // stopping the acquisition and aborting the thread
+    applyStopAcq(false, true);
 
     // releasing the camera thread
     delete m_thread;
@@ -132,6 +132,8 @@ void Camera::prepareAcq()
  *******************************************************************/
 void Camera::startAcq()
 {
+    stopAcq();
+
     m_thread->sendCmd(CameraThread::StartAcq);
     m_thread->waitNotStatus(CameraThread::Idle);
 }
@@ -141,22 +143,46 @@ void Camera::startAcq()
  *******************************************************************/
 void Camera::stopAcq()
 {
+    // stopping the thread and restarting the thread in case of error
+    applyStopAcq(true, false);
+}
+
+/*******************************************************************
+ * \brief stops the acquisition and abort or restart the acq thread 
+ *        if it is in error. Can also abort the thread when we exit
+ *        the program.
+ *******************************************************************/
+void Camera::applyStopAcq(bool in_restart, bool in_always_abort)
+{
     DEB_MEMBER_FUNCT();
 
 	DEB_TRACE() << "executing StopAcq command...";
 
-    if(m_thread->getStatus() != CameraThread::Error)
-    {
-        m_thread->execStopAcq();
-
-        // Waiting for thread to finish or to be in error
-        m_thread->waitNotStatus(CameraThread::Running);
-    }
+    m_thread->execStopAcq();
 
     // thread in error
     if(m_thread->getStatus() == CameraThread::Error)
     {
-        // aborting & restart the thread
+        // aborting the thread
+        m_thread->abort();
+
+        if(in_restart)
+        {
+            // releasing the camera thread
+            delete m_thread;
+
+            // creating the camera thread
+            m_thread = new CameraThread(m_frames_manager, this);
+
+            // starting the acquisition thread
+            m_thread->start();
+        }
+    }
+    else
+    // we are going to exit the program, so we are forcing an abort
+    if(in_always_abort)
+    {
+        // aborting the thread
         m_thread->abort();
     }
 }
@@ -297,6 +323,32 @@ void Camera::getNbFrames(size_t & out_received  ,
     m_frames_manager->getNbFrames(out_received, out_not_merged, out_treated);
 }
 
+/************************************************************************
+ * \brief get the gap pixels management activation state
+ * \return is the gap pixels management activated ?
+ ************************************************************************/
+bool Camera::getEnableGapPixels() const
+{
+    return m_frames_manager->getEnableGapPixels();
+}
+
+/************************************************************************
+ * \brief set the gap pixels management activation state
+ * \param in_enable_gap_pixels is the gap pixels management should be activated ?
+ ************************************************************************/
+void Camera::setEnableGapPixels(bool in_enable_gap_pixels)
+{
+    bool previous_value = getEnableGapPixels();
+    m_frames_manager->setEnableGapPixels(in_enable_gap_pixels);
+    
+    // when the type of gap pixels management changes, 
+    // we need to update the size of the images
+    if(previous_value != getEnableGapPixels())
+    {
+        updateImageFormat();
+    }
+}
+
 //------------------------------------------------------------------
 // live mode methods
 //------------------------------------------------------------------
@@ -320,7 +372,7 @@ void Camera::restoreDataAfterLiveMode(void)
  *******************************************************************/
 unsigned short Camera::getMaxWidth() const
 {
-    return static_cast<unsigned short>(m_detector->getMaxWidth());
+    return getWidth();
 }
 
 /*******************************************************************
@@ -329,7 +381,7 @@ unsigned short Camera::getMaxWidth() const
  *******************************************************************/
 unsigned short Camera::getMaxHeight() const
 {
-    return static_cast<unsigned short>(m_detector->getMaxHeight());
+    return getHeight();
 }
 
 /*******************************************************************
@@ -338,7 +390,7 @@ unsigned short Camera::getMaxHeight() const
  *******************************************************************/
 unsigned short Camera::getWidth() const
 {
-    return static_cast<unsigned short>(m_detector->getWidth());
+    return m_frames_manager->getWidth();
 }
 
 /*******************************************************************
@@ -347,7 +399,7 @@ unsigned short Camera::getWidth() const
  *******************************************************************/
 unsigned short Camera::getHeight() const
 {
-    return static_cast<unsigned short>(m_detector->getHeight());
+    return m_frames_manager->getHeight();
 }
 
 //------------------------------------------------------------------
