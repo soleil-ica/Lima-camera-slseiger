@@ -41,10 +41,19 @@ using namespace lima::SlsEiger;
 // define it if you want to trace more informations about the acquisition
 //#define SLS_EIGER_CAMERA_FRAMES_LOG_VERBOSE
 
-// define it if you want to check the positions of the gap pixel filling
-// It will filled the gap with a constant value
+// define it if you want to check the positions of the gap pixel filling.
+// It will filled the gap with a constant value.
 //#define SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-#define SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE (-1)
+
+// macro used to compute the pixels'values in the gap between chips
+// dest : this is an integer variable which will contain the result of the computation 
+// source : this is an integer value which contains the pixel value of the corner (x4) or edge (x2)
+// coeff : this is a double value which contains the coefficient used for the correction of the source value 
+#ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
+    #define SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(dest, source, coeff) dest = static_cast<T>(-1)
+#else
+    #define SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(dest, source, coeff) dest = static_cast<T>((static_cast<double>(source) / coeff) + 0.5)
+#endif
 
 /************************************************************************
  * \brief constructor
@@ -77,6 +86,9 @@ CameraFrames::CameraFrames(int         in_complete_frame_parts_number,
     m_chip_size_x                 = 256  ;
     m_chip_size_y                 = 256  ;
     m_enable_gap_pixels           = false;
+
+    m_edge_pixels_correction   = 2.0;
+    m_corner_pixels_correction = 4.0;
 
     // compute the frame part size with filled gap pixels
     int chips_nb_by_line = m_frame_part_size_x / m_chip_size_x;    
@@ -177,6 +189,42 @@ bool CameraFrames::getEnableGapPixels() const
 void CameraFrames::setEnableGapPixels(bool in_enable_gap_pixels)
 {
     m_enable_gap_pixels = in_enable_gap_pixels;
+}
+
+/************************************************************************
+ * \brief get the edge pixels correction value
+ * \return edge pixels correction value
+ ************************************************************************/
+double CameraFrames::getEdgePixelsCorrection() const
+{
+    return m_edge_pixels_correction;
+}
+
+/************************************************************************
+ * \brief set the edge pixels correction value
+ * \param in_edge_pixels_correction new edge pixels correction value
+ ************************************************************************/
+void CameraFrames::setEdgePixelsCorrection(double in_edge_pixels_correction)
+{
+    m_edge_pixels_correction = in_edge_pixels_correction;
+}
+
+/************************************************************************
+ * \brief get the corner pixels correction value
+ * \return corner pixels correction value
+ ************************************************************************/
+double CameraFrames::getCornerPixelsCorrection() const
+{
+    return m_corner_pixels_correction;
+}
+
+/************************************************************************
+ * \brief set the corner pixels correction value
+ * \param in_corner_pixels_correction new edge pixels correction value
+ ************************************************************************/
+void CameraFrames::setCornerPixelsCorrection(double in_corner_pixels_correction)
+{
+    m_corner_pixels_correction = in_corner_pixels_correction;
 }
 
 /*******************************************************************
@@ -660,31 +708,26 @@ template<typename T> void CameraFrames::FillGapOfChip(uint8_t * in_destination_b
     int nb_pixels_by_line;
     int nb_lines;
 
+    const double edge_pixels_correction   = m_edge_pixels_correction  ;
+    const double corner_pixels_correction = m_corner_pixels_correction;
+
     //------------------------------------------------------------------
     // TOP-LEFT, LEFT OR TOP CORNER
     //------------------------------------------------------------------
     // top-left corner (4 x)
     if((in_top_border) && (in_left_border))
     {
-    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-    #else
-        value = (*destination_buffer) >> 2; // div by 4
-    #endif
+        SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), corner_pixels_correction);
 
         *(destination_buffer - m_gap_frame_size_x - 1) = value;
-        *(destination_buffer - m_gap_frame_size_x) = value;
+        *(destination_buffer - m_gap_frame_size_x    ) = value;
         *(destination_buffer - 1) = value;
-        *(destination_buffer ) = value;
+        *(destination_buffer    ) = value;
     }
     else
     if((in_top_border) || (in_left_border))
     {
-    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-    #else
-        value = (*destination_buffer) >> 1; // div by 2
-    #endif
+        SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), edge_pixels_correction);
 
         *(destination_buffer ) = value;
 
@@ -711,11 +754,7 @@ template<typename T> void CameraFrames::FillGapOfChip(uint8_t * in_destination_b
     {
         do
         {
-        #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-            value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-        #else
-            value = (*destination_buffer) >> 1; // div by 2
-        #endif
+            SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), edge_pixels_correction);
 
             *(destination_buffer - m_gap_frame_size_x) = value;
             *destination_buffer++ = value;
@@ -733,25 +772,17 @@ template<typename T> void CameraFrames::FillGapOfChip(uint8_t * in_destination_b
     // top-right corner (4 x)
     if((in_top_border) && (in_right_border))
     {
-    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-    #else
-        value = (*destination_buffer) >> 2; // div by 4
-    #endif
+        SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), corner_pixels_correction);
 
         *(destination_buffer - m_gap_frame_size_x + 1) = value;
-        *(destination_buffer - m_gap_frame_size_x) = value;
+        *(destination_buffer - m_gap_frame_size_x    ) = value;
         *(destination_buffer + 1) = value;
-        *(destination_buffer ) = value;
+        *(destination_buffer    ) = value;
     }
     else
     if((in_top_border) || (in_right_border))
     {
-    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-    #else
-        value = (*destination_buffer) >> 1; // div by 2
-    #endif
+        SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), edge_pixels_correction);
 
         *(destination_buffer ) = value;
 
@@ -784,11 +815,7 @@ template<typename T> void CameraFrames::FillGapOfChip(uint8_t * in_destination_b
         do
         {
             // left border of the line
-        #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-            value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-        #else
-            value = (*destination_buffer) >> 1; // div by 2
-        #endif
+            SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), edge_pixels_correction);
 
             *(destination_buffer - 1) = value;
             *(destination_buffer    ) = value;
@@ -797,11 +824,7 @@ template<typename T> void CameraFrames::FillGapOfChip(uint8_t * in_destination_b
             destination_buffer += (m_chip_size_x - 1);
 
             // right border of the line
-        #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-            value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-        #else
-            value = (*destination_buffer) >> 1; // div by 2
-        #endif
+            SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), edge_pixels_correction);
 
             *(destination_buffer + 1) = value;
             *(destination_buffer    ) = value;
@@ -818,11 +841,7 @@ template<typename T> void CameraFrames::FillGapOfChip(uint8_t * in_destination_b
         do
         {
             // left border of the line
-        #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-            value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-        #else
-            value = (*destination_buffer) >> 1; // div by 2
-        #endif
+            SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), edge_pixels_correction);
 
             *(destination_buffer - 1) = value;
             *(destination_buffer    ) = value;
@@ -842,11 +861,7 @@ template<typename T> void CameraFrames::FillGapOfChip(uint8_t * in_destination_b
         do
         {
             // right border of the line
-        #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-            value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-        #else
-            value = (*destination_buffer) >> 1; // div by 2
-        #endif
+            SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), edge_pixels_correction);
 
             *(destination_buffer + 1) = value;
             *(destination_buffer    ) = value;
@@ -866,25 +881,17 @@ template<typename T> void CameraFrames::FillGapOfChip(uint8_t * in_destination_b
     // bottom-left corner (4 x)
     if((in_bottom_border) && (in_left_border))
     {
-    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-    #else
-        value = (*destination_buffer) >> 2; // div by 4
-    #endif
+        SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), corner_pixels_correction);
 
         *(destination_buffer + m_gap_frame_size_x - 1) = value;
-        *(destination_buffer + m_gap_frame_size_x) = value;
+        *(destination_buffer + m_gap_frame_size_x    ) = value;
         *(destination_buffer - 1) = value;
-        *(destination_buffer ) = value;
+        *(destination_buffer    ) = value;
     }
     else
     if((in_bottom_border) || (in_left_border))
     {
-    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-    #else
-        value = (*destination_buffer) >> 1; // div by 2
-    #endif
+        SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), edge_pixels_correction);
 
         *(destination_buffer ) = value;
 
@@ -911,11 +918,7 @@ template<typename T> void CameraFrames::FillGapOfChip(uint8_t * in_destination_b
     {
         do
         {
-        #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-            value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-        #else
-            value = (*destination_buffer) >> 1; // div by 2
-        #endif
+            SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), edge_pixels_correction);
 
             *(destination_buffer + m_gap_frame_size_x) = value;
             *destination_buffer++ = value;
@@ -933,25 +936,17 @@ template<typename T> void CameraFrames::FillGapOfChip(uint8_t * in_destination_b
     // bottom-right corner (4 x)
     if((in_bottom_border) && (in_right_border))
     {
-    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-    #else
-        value = (*destination_buffer) >> 2; // div by 4
-    #endif
+        SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), corner_pixels_correction);
 
         *(destination_buffer + m_gap_frame_size_x + 1) = value;
-        *(destination_buffer + m_gap_frame_size_x) = value;
+        *(destination_buffer + m_gap_frame_size_x    ) = value;
         *(destination_buffer + 1) = value;
-        *(destination_buffer ) = value;
+        *(destination_buffer    ) = value;
     }
     else
     if((in_bottom_border) || (in_right_border))
     {
-    #ifdef SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS
-        value = static_cast<T>(SLS_EIGER_CAMERA_FRAMES_CHECK_GAP_PIXELS_VALUE);
-    #else
-        value = (*destination_buffer) >> 1; // div by 2
-    #endif
+        SLS_EIGER_CAMERA_FRAMES_COMPUTE_PIXELS(value, (*destination_buffer), edge_pixels_correction);
 
         *(destination_buffer ) = value;
 

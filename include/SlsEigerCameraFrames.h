@@ -89,6 +89,18 @@ namespace lima
             // set the gap pixels management activation state
             void setEnableGapPixels(bool in_enable_gap_pixels);
 
+            // get the edge pixels correction value
+            double getEdgePixelsCorrection() const;
+
+            // set the edge pixels correction value
+            void setEdgePixelsCorrection(double in_edge_pixels_correction);
+
+            // get the corner pixels correction value
+            double getCornerPixelsCorrection() const;
+
+            // set the corner pixels correction value
+            void setCornerPixelsCorrection(double in_corner_pixels_correction);
+
             // Gets the image width
             unsigned short getWidth() const;
 
@@ -180,6 +192,9 @@ namespace lima
             std::size_t m_gap_frame_size_y     ; // number of vertical pixels   for a complete frame with filled gap pixels
             std::size_t m_gap_frame_part_size_x; // number of horizontal pixels for a frame part with filled gap pixels
             std::size_t m_gap_frame_part_size_y; // number of vertical pixels   for a frame part with filled gap pixels
+
+            double      m_edge_pixels_correction  ; // correction value for edge pixels (double in size)
+            double      m_corner_pixels_correction; // correction value for corner pixels (four-times the normal size)
 
             //==================================================================
             // used to protect the containers access

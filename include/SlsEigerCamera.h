@@ -338,6 +338,18 @@ namespace lima
                 // set the gap pixels management activation state
                 void setEnableGapPixels(bool in_enable_gap_pixels);
 
+                // get the edge pixels correction value
+                double getEdgePixelsCorrection() const;
+
+                // set the edge pixels correction value
+                void setEdgePixelsCorrection(double in_edge_pixels_correction);
+
+                // get the corner pixels correction value
+                double getCornerPixelsCorrection() const;
+
+                // set the corner pixels correction value
+                void setCornerPixelsCorrection(double in_corner_pixels_correction);
+
             //==================================================================
             // Related to event control object
             //==================================================================
