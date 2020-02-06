@@ -692,6 +692,14 @@ lima::SlsEiger::TriggerMode Detector::getTriggerMode(void)
 // live mode methods
 //------------------------------------------------------------------
 /*******************************************************************
+ * \brief tell if a live mode is running
+*******************************************************************/
+bool Detector::liveModeIsRunning(void) const
+{
+    return m_data_saved_for_live_mode;
+}
+
+/*******************************************************************
  * \brief Save the data which will be changed during live mode
 *******************************************************************/
 void Detector::saveDataBeforeLiveMode(void)

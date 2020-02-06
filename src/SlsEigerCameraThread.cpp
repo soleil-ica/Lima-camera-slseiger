@@ -151,7 +151,7 @@ void CameraThread::execStartAcq()
     DEB_MEMBER_FUNCT();
     DEB_TRACE() << "executing StartAcq command...";
 
-    const double end_acq_sleep_time_sec = 0.5; // sleep the thread in seconds
+    const double end_acq_sleep_time_sec  = 0.5; // sleep the thread in seconds
     const double no_frame_sleep_time_sec = 0.1; // sleep the thread in seconds
 
     m_force_stop = false;
@@ -177,7 +177,7 @@ void CameraThread::execStartAcq()
     // Main acquisition loop
     // m_force_stop can be set to true by the execStopAcq call to abort an acquisition
     // m_force_stop can be set to true also with an error hardware camera status
-    // the loop can also end if the number of 
+    // the loop can also end if all the frames wre acquired
     while(!m_force_stop && !allFramesAcquired())
     {
         // treating all complete frames

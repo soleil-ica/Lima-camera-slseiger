@@ -323,6 +323,9 @@ namespace lima
             // restore data which were saved before live mode
             void restoreDataAfterLiveMode(void);
 
+            // tell if a live mode is running
+            bool liveModeIsRunning(void) const;
+
         private:
             // creates an autolock mutex for sdk methods access
             lima::AutoMutex sdkLock() const;

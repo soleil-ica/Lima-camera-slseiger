@@ -349,6 +349,64 @@ void Camera::setEnableGapPixels(bool in_enable_gap_pixels)
     }
 }
 
+/************************************************************************
+ * \brief get the edge pixels correction value
+ * \return edge pixels correction value
+ ************************************************************************/
+double Camera::getEdgePixelsCorrection() const
+{
+    return m_frames_manager->getEdgePixelsCorrection();
+}
+
+/************************************************************************
+ * \brief set the edge pixels correction value
+ * \param in_edge_pixels_correction new edge pixels correction value
+ ************************************************************************/
+void Camera::setEdgePixelsCorrection(double in_edge_pixels_correction)
+{
+    DEB_MEMBER_FUNCT();
+
+    if(in_edge_pixels_correction >= 1.0)
+    {
+        // the device is in acquisition ?
+        if((m_thread->getStatus() == CameraThread::Running) && (!m_detector->liveModeIsRunning()))
+        {
+            THROW_HW_ERROR(ErrorType::Error) << "Changing the pixels correction is not allowed during a snap acquisition!";
+        }
+
+        m_frames_manager->setEdgePixelsCorrection(in_edge_pixels_correction);
+    }
+}
+
+/************************************************************************
+ * \brief get the corner pixels correction value
+ * \return corner pixels correction value
+ ************************************************************************/
+double Camera::getCornerPixelsCorrection() const
+{
+    return m_frames_manager->getCornerPixelsCorrection();
+}
+
+/************************************************************************
+ * \brief set the corner pixels correction value
+ * \param in_corner_pixels_correction new edge pixels correction value
+ ************************************************************************/
+void Camera::setCornerPixelsCorrection(double in_corner_pixels_correction)
+{
+    DEB_MEMBER_FUNCT();
+
+    if(in_corner_pixels_correction >= 1.0)
+    {
+        // the device is in acquisition ?
+        if((m_thread->getStatus() == CameraThread::Running) && (!m_detector->liveModeIsRunning()))
+        {
+            THROW_HW_ERROR(ErrorType::Error) << "Changing the pixels correction is not allowed during a snap acquisition!";
+        }
+
+        m_frames_manager->setCornerPixelsCorrection(in_corner_pixels_correction);
+    }
+}
+
 //------------------------------------------------------------------
 // live mode methods
 //------------------------------------------------------------------
@@ -701,7 +759,7 @@ void Camera::setNbFrames(int64_t in_nb_frames)
     DEB_TRACE() << "Camera::setNbFrames - " << DEB_VAR1(in_nb_frames);
     
     if(in_nb_frames < 0LL)
-        throw LIMA_HW_EXC(InvalidValue, "Invalid nb of frames");
+        throw LIMA_HW_EXC(InvalidValue, "Invalid number of frames");
 
     m_detector->setNbFrames(in_nb_frames);
 }
